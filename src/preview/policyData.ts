@@ -13,21 +13,21 @@
 
 /** 설정이 속한 카테고리 = 탭 (「전체」 제외) */
 export type PolicyCat =
+  | '운영 형태'
   | '화면·노출'
   | '상품·장바구니'
   | '구매후기'
   | '주문·결제'
-  | '회원관리'
   | '보안'
   | '정산·재고';
 
 export const POLICY_TABS = [
   '전체',
+  '운영 형태',
   '화면·노출',
   '상품·장바구니',
   '구매후기',
   '주문·결제',
-  '회원관리',
   '보안',
   '정산·재고',
 ] as const;
@@ -90,7 +90,7 @@ export const POLICY_ITEMS: PolicyItem[] = [
   {
     name: '1:1 문의버튼',
     asIsName: '기능_1:1문의버튼',
-    cat: '회원관리',
+    cat: '운영 형태',
     toggle: null,
     option: {
       kind: 'radio-url',
@@ -101,7 +101,7 @@ export const POLICY_ITEMS: PolicyItem[] = [
     help: 'URL은 [카카오채널 관리자 > 프로필 > 채널 정보 > 채팅 URL]으로 확인할 수 있습니다.',
     asIs: '라디오(게시판 연결 / 상담하기 연결) + URL 입력',
     toBe: '라디오(게시판 연결 / 상담하기 연결) + URL 입력',
-    diff: '조작 방식은 그대로. 이름에서 접두사만 뺌.',
+    diff: '조작 방식은 그대로. 이름에서 접두사만 뺌. 고객 문의 창구라 운영 형태 탭에 둠.',
     changeType: '표기 정리',
   },
   {
@@ -177,13 +177,13 @@ export const POLICY_ITEMS: PolicyItem[] = [
   {
     name: '로그인 유도',
     asIsName: '기능_로그인 유도',
-    cat: '화면·노출',
+    cat: '운영 형태',
     toggle: 'off',
     option: { kind: 'radio', items: ['팝업 형태', '페이지 형태'], selected: null },
     help: '비회원 구매가 가능한 링크와 함께 로그인을 유도할 수 있습니다.',
     asIs: 'ON·OFF 슬라이더 + 라디오(팝업 형태 / 페이지 형태)',
     toBe: '토글 + 라디오(팝업 형태 / 페이지 형태)',
-    diff: '구조 동일. 표기만 통일.',
+    diff: '구조는 그대로. 비회원을 어떻게 받을지 정하는 설정이라 운영 형태 탭에 둠.',
     changeType: '표기 정리',
   },
   {
@@ -194,7 +194,7 @@ export const POLICY_ITEMS: PolicyItem[] = [
     help: '회원이 로그인 시도할 때 5회 이상 비밀번호를 잘못 입력하면 계정 접속을 차단하고 비밀번호 재설정 안내를 진행합니다.',
     asIs: 'ON·OFF 슬라이더',
     toBe: '사용 토글',
-    diff: '조작 방식은 그대로. 계정 접근 통제라 보안 탭으로 옮김.',
+    diff: '조작 방식은 그대로. 계정 접근 통제라 보안 탭에 둠.',
     changeType: '표기 정리',
   },
   {
@@ -211,7 +211,7 @@ export const POLICY_ITEMS: PolicyItem[] = [
   {
     name: '비회원 상품 가격 정보 숨김',
     asIsName: '기능_비회원 상품 가격 정보 숨김',
-    cat: '화면·노출',
+    cat: '운영 형태',
     toggle: 'off',
     help: '해당 기능 사용 시 상품 구매 제한 조건을 회원 구매만 허용하도록 설정해 주세요.',
     asIs: 'ON·OFF 슬라이더',
@@ -467,7 +467,7 @@ export const POLICY_ITEMS: PolicyItem[] = [
   {
     name: '탭바 노출',
     asIsName: '기능_탭바 노출',
-    cat: '화면·노출',
+    cat: '운영 형태',
     toggle: null,
     option: { kind: 'check', items: ['쇼핑몰 홈', '상품 리스트'], checked: [0] },
     warn: '둘 다 해제하면 탭바가 어디에도 노출되지 않습니다.',
@@ -480,19 +480,19 @@ export const POLICY_ITEMS: PolicyItem[] = [
   {
     name: '폐쇄몰',
     asIsName: '없음 (신규)',
-    cat: '보안',
+    cat: '운영 형태',
     toggle: 'off',
     warn: '켜면 비회원은 어떤 경로로도 쇼핑몰을 볼 수 없습니다.',
     help: '첫 진입 화면이 로그인으로 고정됩니다. 상품 주소나 경로를 직접 알고 들어와도 로그인 화면으로 이동합니다.',
     asIs: '없음',
     toBe: '사용 토글',
-    diff: '새로 넣는 설정. 회원만 볼 수 있는 쇼핑몰로 운영할 때 쓴다.',
+    diff: '새로 넣는 설정. 회원만 볼 수 있는 쇼핑몰로 운영할지 정하는 설정이라 운영 형태 탭에 둠.',
     changeType: '신규',
   },
   {
     name: '회원정보 작성 알림',
     asIsName: '기능_회원정보 작성 알림',
-    cat: '회원관리',
+    cat: '운영 형태',
     toggle: 'on',
     help: '로그인을 하면 이름과 휴대폰 번호, 마케팅 동의(선택)를 작성하도록 하단 알림 팝업을 띄울 수 있습니다.',
     asIs: 'ON·OFF 슬라이더',
@@ -503,7 +503,7 @@ export const POLICY_ITEMS: PolicyItem[] = [
   {
     name: '회원가입 승인 방식',
     asIsName: '기능_회원가입 승인 방식',
-    cat: '회원관리',
+    cat: '운영 형태',
     toggle: 'off',
     help: '관리자가 회원목록에서 승인한 회원만 회원가입을 완료할 수 있는 방식입니다.',
     helpLinks: ['회원목록'],
