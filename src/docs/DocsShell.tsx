@@ -197,7 +197,20 @@ export function DocsShell() {
   const openInNew = () => window.open(iframeSrc, '_blank', 'noopener');
 
   // 설명 패널에 노출할 섹션 — 활성 탭 것만(탭 없으면 전부)
-  const shownSections = entry.sections.filter((s) => !s.context || s.context === activeTab);
+  // 마커를 지정했는데 지금 화면에 그 요소가 없으면 감춘다(다른 탭 전용 설명이 번호 없이 딸려 나오는 것 방지).
+  // 화면 마커 번호 순으로 정렬한다. 번호가 붙은 항목이 먼저, 그 뒤에 마커 없는 항목.
+  const marksReady = marks.length > 0;
+  const shownSections = entry.sections
+    .filter((s) => !s.context || s.context === activeTab)
+    .filter((s) => !s.mark || !marksReady || markNum[s.mark] != null)
+    .map((s, i) => ({ s, i, num: s.mark ? markNum[s.mark] : undefined }))
+    .sort((a, b) => {
+      if (a.num != null && b.num != null) return a.num - b.num;
+      if (a.num != null) return -1;
+      if (b.num != null) return 1;
+      return a.i - b.i;
+    })
+    .map((x) => x.s);
   // 핀 노출 = 코멘트/둘다 모드거나 배치 중
   const commentsVisible = rightMode !== 'desc' || commentPlace;
 

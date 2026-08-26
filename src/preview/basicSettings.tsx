@@ -14,7 +14,10 @@ import {
   AdminLayout, colors, FONT, Radio, Checkbox, FilledButton, SelectInput,
   StatusToggle, PillTabs, InitialBadge,
 } from '../design-system';
-import { POLICY_ITEMS, POLICY_TABS, STATUS_NOTES, rowsOfTab, type PolicyItem, type PolicyOption } from './policyData';
+import {
+  POLICY_ITEMS, POLICY_TABS, STATUS_NOTES, rowsOfTab,
+  type PolicyItem, type PolicyOption,
+} from './policyData';
 
 // 이 화면에서 쓰는 색 — 전부 디자인 토큰에서 가져온다
 const C = {
@@ -31,6 +34,7 @@ const C = {
 /* ────────────────────────────────────────────────────────────
  *  이 화면 전용 조립 — 설정 목록의 행·영역 골격
  * ──────────────────────────────────────────────────────────── */
+
 
 /** ⓘ 도움말 — 지정한 문구만 초록 굵게 강조 */
 function HelpLine({ text, links = [] }: { text: string; links?: string[] }) {
@@ -85,6 +89,19 @@ function OptionView({ option }: { option: PolicyOption }) {
       </Flex>
     );
   }
+  if (option.kind === 'num') {
+    return (
+      <Flex gap="6px" align="center">
+        <Text fontFamily={FONT} fontSize="12px" letterSpacing="-0.24px" color={C.label} whiteSpace="nowrap">
+          {option.prefix}
+        </Text>
+        <InlineNumber value={option.value} />
+        <Text fontFamily={FONT} fontSize="12px" letterSpacing="-0.24px" color={C.label} whiteSpace="nowrap">
+          {option.suffix}
+        </Text>
+      </Flex>
+    );
+  }
   if (option.kind === 'select') {
     return <SelectInput label={option.label} width="140px" />;
   }
@@ -124,18 +141,20 @@ function OptionView({ option }: { option: PolicyOption }) {
 
 /** 설정 한 줄 — [상태 토글] │ [초성 뱃지 + 설정명] │ [옵션 / ⓘ 도움말] */
 function PolicyRow({
-  item, badge, anchor, on, onToggle, muted,
+  item, badge, anchor, hierAnchor, rowMark, on, onToggle, muted,
 }: {
-  item: PolicyItem; badge?: string; anchor?: boolean;
+  item: PolicyItem; badge?: string; anchor?: boolean; hierAnchor?: boolean; rowMark?: string;
   on: boolean; onToggle: () => void;
-  /** 부모 설정이 꺼져 있어 지금은 동작하지 않는 상태 */
+  /** 부모 설정이 꺼져 있어 이 설정을 쓸 수 없는 상태. 토글까지 잠근다 */
   muted?: boolean;
 }) {
   // 오른쪽에 쌓이는 줄이 둘 이상이면 고정 높이를 풀어 준다.
   // 경고 문구만 있고 옵션이 없는 행(폐쇄몰)이 44px 안에 눌리던 문제.
   const stacked = [item.option, item.warn, item.help].filter(Boolean).length > 1;
   return (
-    <Flex px="24px" py={stacked ? '12px' : undefined} h={stacked ? undefined : '44px'} gap="20px" align="center">
+    <Flex data-doc-mark={rowMark}
+      px="24px" py={stacked ? '12px' : undefined} h={stacked ? undefined : '44px'} gap="20px" align="center"
+      opacity={muted ? 0.4 : 1} pointerEvents={muted ? 'none' : undefined}>
       {/* 상태 토글 — 없는 설정은 폭만 차지해 열을 맞춘다 */}
       <Box data-doc-mark={anchor ? 'toggle-col' : undefined} w="57px" flexShrink={0}>
         {item.toggle !== null && <StatusToggle on={on} onToggle={onToggle} />}
@@ -146,7 +165,8 @@ function PolicyRow({
         <InitialBadge letter={badge} />
         <Flex w="200px" align="center">
           {item.child && (
-            <Flex w="16px" alignSelf="stretch" justify="center" flexShrink={0}>
+            <Flex data-doc-mark={hierAnchor ? 'child' : undefined}
+              w="16px" alignSelf="stretch" justify="center" flexShrink={0}>
               <Box w="1px" bg={C.divider} />
             </Flex>
           )}
@@ -155,9 +175,8 @@ function PolicyRow({
           </Text>
         </Flex>
       </Flex>
-      {/* 옵션 + 도움말. 부모가 꺼져 있으면 옅게 두고 조작을 막는다 */}
-      <Flex data-doc-mark={anchor ? 'option-col' : undefined} direction="column" gap="6px" justify="center" minW="0"
-        opacity={muted ? 0.4 : 1} pointerEvents={muted ? 'none' : undefined}>
+      {/* 옵션 + 도움말 */}
+      <Flex data-doc-mark={anchor ? 'option-col' : undefined} direction="column" gap="6px" justify="center" minW="0">
         {item.option && <OptionView option={item.option} />}
         {item.warn && (
           <Text fontFamily={FONT} fontWeight="700" fontSize="12px" letterSpacing="-0.24px" color={colors.red} lineHeight="1.4">
@@ -172,12 +191,12 @@ function PolicyRow({
 
 /** 설정 영역 한 덩어리 — 제목 + 본문 + 하단 「변경사항 적용」 */
 function SetBox({
-  title, sub, children, mark, footer = true,
+  title, sub, children, applyMark, footer = true,
 }: {
-  title: string; sub?: React.ReactNode; children: React.ReactNode; mark?: string; footer?: boolean;
+  title: string; sub?: React.ReactNode; children: React.ReactNode; applyMark?: string; footer?: boolean;
 }) {
   return (
-    <Box data-doc-mark={mark} pb="20px">
+    <Box pb="20px">
       <Flex gap="12px" align="center" pb="8px">
         <Text fontFamily={FONT} fontWeight="700" fontSize="18px" letterSpacing="-0.36px" color={C.title}>{title}</Text>
         {sub}
@@ -185,7 +204,7 @@ function SetBox({
       {children}
       {footer && (
         <Flex justify="center" py="15px">
-          <FilledButton label="변경사항 적용" bg={colors.bcDefault} px="24px" pt="8px" pb="9px" markId={mark ? 'apply' : undefined} />
+          <FilledButton label="변경사항 적용" bg={colors.bcDefault} px="24px" pt="8px" pb="9px" markId={applyMark} />
         </Flex>
       )}
     </Box>
@@ -251,6 +270,8 @@ export function BasicSettings() {
     initialTab && (POLICY_TABS as readonly string[]).includes(initialTab) ? initialTab : '전체',
   );
   const rows = rowsOfTab(tab);
+  // 화면 구조 설명은 전체 탭에서 한 번만 한다. 개별 탭에는 그 탭에서 달라진 설정만 표시.
+  const isAll = tab === '전체';
   // 부모를 껐을 때 하위 설정을 옅게 처리해야 해서 토글 상태를 한곳에서 관리한다
   const [onMap, setOnMap] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(POLICY_ITEMS.map((i) => [i.name, i.toggle === 'on'])),
@@ -261,9 +282,9 @@ export function BasicSettings() {
     <AdminLayout navActive="home" sidebar={LNB}>
       <Box fontFamily={FONT} color={C.label} minW="1360px">
         {/* 1. 쇼핑몰 정책 및 기능 — 개편 대상 */}
-        <SetBox title="쇼핑몰 정책 및 기능" mark="policy">
+        <SetBox title="쇼핑몰 정책 및 기능" applyMark={isAll ? 'apply' : undefined}>
           {/* 카테고리 탭 */}
-          <Box data-doc-mark="tabs" pb="12px">
+          <Box data-doc-mark={isAll ? 'tabs' : undefined} pb="12px">
             <PillTabs tabs={POLICY_TABS} active={tab} onChange={setTab} />
           </Box>
 
@@ -271,19 +292,21 @@ export function BasicSettings() {
           <Box data-doc-tab={tab} bg={C.rowBg} borderTop={`1px solid ${C.line}`} borderBottom={`1px solid ${C.line}`}>
             {rows.map((item, i) => {
               // 계층·토글없음은 그 유형이 처음 나오는 행에만 마커를 건다
-              const firstChild = item.child && !rows.slice(0, i).some((r) => r.child);
-              const firstNoToggle = item.toggle === null && !rows.slice(0, i).some((r) => r.toggle === null);
+              const firstChild = isAll && item.child && !rows.slice(0, i).some((r) => r.child);
+              const firstNoToggle = isAll && item.toggle === null && !rows.slice(0, i).some((r) => r.toggle === null);
               // 열 설명 마커는 토글이 있는 첫 행에 걺 — 빈 토글 자리에 마커가 붙지 않게
-              const colAnchor = item.toggle !== null && !rows.slice(0, i).some((r) => r.toggle !== null);
+              const colAnchor = isAll && item.toggle !== null && !rows.slice(0, i).some((r) => r.toggle !== null);
+
               // 하위 설정은 바로 위 상위 설정을 따른다. 상위가 꺼져 있으면 옅게
               const parent = item.child
                 ? [...rows.slice(0, i)].reverse().find((r) => !r.child)
                 : undefined;
               const muted = Boolean(parent && parent.toggle !== null && !onMap[parent.name]);
               return (
-                <Box key={item.name} data-doc-mark={firstChild ? 'child' : firstNoToggle ? 'no-toggle' : undefined}>
+                <Box key={item.name}>
                   <Box px="24px"><Box h="1px" bg={C.line} /></Box>
-                  <PolicyRow item={item} badge={item.badge} anchor={colAnchor} muted={muted}
+                  <PolicyRow item={item} badge={item.badge} anchor={colAnchor} hierAnchor={firstChild} muted={muted}
+                    rowMark={item.docMark ?? (firstNoToggle ? 'no-toggle' : undefined)}
                     on={!!onMap[item.name]} onToggle={() => toggleOne(item.name)} />
                 </Box>
               );
@@ -292,7 +315,7 @@ export function BasicSettings() {
           </Box>
 
           {/* 조작할 수 없는 상태 안내 — 탭으로 나뉘는 설정 목록과 섞지 않는다 */}
-          <Box data-doc-mark="status-note" pt="12px">
+          <Box data-doc-mark={isAll ? 'status-note' : undefined} pt="12px">
             {STATUS_NOTES.map((n) => (
               <Flex key={n.name} px="24px" py="10px" gap="20px" align="center"
                 bg="white" border={`1px solid ${C.line}`} borderRadius="6px">

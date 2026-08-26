@@ -45,6 +45,8 @@ export type PolicyOption =
   | { kind: 'radio-url'; items: string[]; selected: number; value: string }
   /** 드롭다운 하나 (선물하기 기한, 비밀번호 주기 등) */
   | { kind: 'select'; label: string }
+  /** 숫자 입력 하나. 쓸지 말지는 토글이 정하므로 제한없음 같은 선택지를 두지 않는다 */
+  | { kind: 'num'; prefix: string; value: string; suffix: string }
   /** 라디오 2개 중 두 번째가 [접두어][숫자][단위] 형태 (구매후기 작성 기간·조건) */
   | {
       kind: 'radio-num';
@@ -84,6 +86,8 @@ export interface PolicyItem {
   /** 달라진 점 요약 */
   diff: string;
   changeType: ChangeType;
+  /** As-Is 대비 달라진 설정에만 붙는 문서 마커 키. 설명 패널의 항목과 이어진다 */
+  docMark?: string;
 }
 
 export const POLICY_ITEMS: PolicyItem[] = [
@@ -116,40 +120,28 @@ export const POLICY_ITEMS: PolicyItem[] = [
   },
   {
     name: '구매후기 작성 기간',
+    docMark: 'chg-review-period',
     asIsName: '기능_구매후기 작성 기간',
     cat: '구매후기',
     toggle: 'off',
     child: true,
-    option: {
-      kind: 'radio-num',
-      first: '제한없음',
-      prefix: '배송완료 후',
-      value: '15',
-      suffix: '일 까지 구매후기 작성 가능',
-      selected: 0,
-    },
+    option: { kind: 'num', prefix: '배송완료 후', value: '15', suffix: '일 까지 작성 가능' },
     asIs: '라디오(제한없음 / 배송완료 후 N일)',
-    toBe: '토글 + 라디오(제한없음 / 배송완료 후 N일)',
-    diff: '기한 제한을 쓸지 말지를 토글로 빼냄. 라디오는 값만 고름. 시안 표기값 15일.',
+    toBe: '토글 + 숫자 입력(배송완료 후 N일)',
+    diff: '기한 제한을 쓸지 말지는 토글이 정함. 제한없음은 토글 해제와 같은 말이라 선택지에서 뺌.',
     changeType: '토글 분리',
   },
   {
     name: '구매후기 작성 조건',
+    docMark: 'chg-review-length',
     asIsName: '기능_구매후기 작성 조건',
     cat: '구매후기',
     toggle: 'off',
     child: true,
-    option: {
-      kind: 'radio-num',
-      first: '제한없음',
-      prefix: '최소',
-      value: '20',
-      suffix: '자 이상 작성해야 등록 가능',
-      selected: 1,
-    },
+    option: { kind: 'num', prefix: '최소', value: '20', suffix: '자 이상 작성해야 등록 가능' },
     asIs: '라디오(제한없음 / N자 이상부터 작성 가능)',
-    toBe: '토글 + 라디오(제한없음 / 최소 N자 이상 작성해야 등록 가능)',
-    diff: '글자 수 제한을 쓸지 말지를 토글로 빼냄. 문구를 행동 기준으로 바꿈. 시안 표기값 20자.',
+    toBe: '토글 + 숫자 입력(최소 N자)',
+    diff: '글자 수 제한을 쓸지 말지는 토글이 정함. 제한없음은 토글 해제와 같은 말이라 선택지에서 뺌.',
     changeType: '토글 분리',
   },
   {
@@ -221,6 +213,7 @@ export const POLICY_ITEMS: PolicyItem[] = [
   },
   {
     name: '비밀번호 변경 권장 주기',
+    docMark: 'chg-pw-cycle',
     asIsName: '비밀번호 변경 권장 주기',
     cat: '보안',
     toggle: 'off',
@@ -288,6 +281,7 @@ export const POLICY_ITEMS: PolicyItem[] = [
   },
   {
     name: '이벤트 효과',
+    docMark: 'chg-event',
     asIsName: '기능_이벤트 효과',
     cat: '화면·노출',
     toggle: 'off',
@@ -337,15 +331,17 @@ export const POLICY_ITEMS: PolicyItem[] = [
     name: '주문/결제 약관 동의 기본값',
     asIsName: '기능_주문/결제 약관 동의 기본값',
     cat: '주문·결제',
-    toggle: 'on',
-    help: '약관 동의를 기본 체크 상태로 둡니다. 구매자가 직접 동의하게 두는 편을 권합니다.',
+    toggle: null,
+    option: { kind: 'radio', items: ['동의', '동의안함'], selected: 0 },
+    help: '주문서에 약관 동의를 미리 체크해 둘지 정합니다. 구매자가 직접 동의하게 두는 편을 권합니다.',
     asIs: '라디오(동의 / 동의안함)',
-    toBe: '사용 토글',
-    diff: '실제 판단이 「기본 체크를 넣을지」 하나라 이진 토글로 바꿈.',
-    changeType: '토글 분리',
+    toBe: '라디오(동의 / 동의안함)',
+    diff: '약관 동의 자체는 끌 수 없고 기본 체크 상태만 고르는 값이라 토글로 바꾸지 않음.',
+    changeType: '유지',
   },
   {
     name: '주문/결제 만 14세 미만 제한',
+    docMark: 'chg-age14',
     asIsName: '기능_주문/결제 만 14세 미만 제한',
     cat: '주문·결제',
     toggle: 'off',
@@ -357,34 +353,37 @@ export const POLICY_ITEMS: PolicyItem[] = [
   },
   {
     name: '주문 취소 ⓘ 입금완료 상태까지',
+    docMark: 'chg-cancel-paid',
     asIsName: '기능_주문 취소 ⓘ 입금완료 상태까지',
     cat: '주문·결제',
-    toggle: 'on',
+    toggle: null,
     option: {
       kind: 'radio',
-      items: ['주문자 취소', '취소 요청 접수', '카카오톡 채널 접수'],
+      items: ['주문자 취소', '취소 요청 접수', '카카오톡 채널 접수', '사용안함'],
       selected: 0,
     },
     help: '입금완료 상태까지 주문을 취소하는 방식입니다.',
     asIs: '라디오(주문자 취소 / 취소 요청접수 / 상담하기 연결 / 사용안함)',
-    toBe: '토글 + 라디오(주문자 취소 / 취소 요청 접수 / 카카오톡 채널 접수)',
-    diff: '취소 허용 여부를 토글로 빼고, 접수 방식만 라디오에 남김. `상담하기 연결` → `카카오톡 채널 접수`.',
-    changeType: '토글 분리',
+    toBe: '라디오(주문자 취소 / 취소 요청 접수 / 카카오톡 채널 접수 / 사용안함)',
+    diff: '사용안함도 이 단계의 취소 처리 방식 중 하나라 라디오에 그대로 둠. 상담하기 연결은 카카오톡 채널 접수로 이름만 바꿈.',
+    changeType: '명칭 변경',
   },
   {
     name: '주문 취소 ⓘ 배송준비 상태부터',
+    docMark: 'chg-cancel-ship',
     asIsName: '기능_주문 취소 ⓘ 배송준비 상태부터',
     cat: '주문·결제',
-    toggle: 'on',
-    option: { kind: 'radio', items: ['취소 요청 접수', '카카오톡 채널 접수'], selected: 0 },
+    toggle: null,
+    option: { kind: 'radio', items: ['취소 요청 접수', '카카오톡 채널 접수', '사용안함'], selected: 0 },
     help: '배송준비 상태부터 주문을 취소하는 방식입니다.',
     asIs: '라디오(취소 요청접수 / 상담하기 연결 / 사용안함)',
-    toBe: '토글 + 라디오(취소 요청 접수 / 카카오톡 채널 접수)',
-    diff: '취소 허용 여부를 토글로 빼고, 접수 방식만 라디오에 남김. `상담하기 연결` → `카카오톡 채널 접수`.',
-    changeType: '토글 분리',
+    toBe: '라디오(취소 요청 접수 / 카카오톡 채널 접수 / 사용안함)',
+    diff: '사용안함도 이 단계의 취소 처리 방식 중 하나라 라디오에 그대로 둠. 상담하기 연결은 카카오톡 채널 접수로 이름만 바꿈.',
+    changeType: '명칭 변경',
   },
   {
     name: '재고 차감 기준',
+    docMark: 'chg-stock-base',
     asIsName: '기능_재고 차감 기준',
     cat: '정산·재고',
     toggle: null,
@@ -398,6 +397,7 @@ export const POLICY_ITEMS: PolicyItem[] = [
   },
   {
     name: '재고옵션 품절 시 옵션값 자동 숨김',
+    docMark: 'chg-soldout-hide',
     asIsName: '기능_재고옵션 품절시, 옵션값 자동 숨김',
     cat: '상품·장바구니',
     toggle: 'off',
@@ -421,6 +421,7 @@ export const POLICY_ITEMS: PolicyItem[] = [
   {
     // 이름 앞을 짝과 맞춰, 가나다순에서 취소/반품 재고 처리 바로 뒤에 오게 한다
     name: '취소/반품 재고 처리 - 미입금',
+    docMark: 'chg-restore-unpaid',
     asIsName: '미입금 취소/반품 재고 처리',
     cat: '정산·재고',
     toggle: null,
@@ -434,13 +435,13 @@ export const POLICY_ITEMS: PolicyItem[] = [
     name: '카카오 싱크 자동 로그인',
     asIsName: '기능_카카오 싱크 자동 로그인',
     cat: '운영 형태',
-    toggle: 'off',
-    option: { kind: 'radio', items: ['구매하기 눌렀을 때', '상품상세 눌렀을 때'], selected: 0 },
+    toggle: null,
+    option: { kind: 'radio', items: ['구매하기 눌렀을 때', '상품상세 눌렀을 때', '사용안함'], selected: 0 },
     help: '카카오톡 안에서 상품 주소를 눌러 들어온 경우에만 적용됩니다.',
     asIs: '라디오(구매하기 눌렀을때 / 상품상세 눌렀을때 / 사용안함)',
-    toBe: '토글 + 라디오(구매하기 눌렀을 때 / 상품상세 눌렀을 때)',
-    diff: '`사용안함`을 라디오에서 빼 토글로 옮김.',
-    changeType: '토글 분리',
+    toBe: '라디오(구매하기 눌렀을 때 / 상품상세 눌렀을 때 / 사용안함)',
+    diff: '사용안함도 자동 로그인 시점을 고르는 답 중 하나라 라디오에 그대로 둠.',
+    changeType: '유지',
   },
   {
     name: '쿠폰/포인트 동시 사용',
@@ -479,6 +480,7 @@ export const POLICY_ITEMS: PolicyItem[] = [
   },
   {
     name: '폐쇄몰',
+    docMark: 'chg-private-mall',
     asIsName: '없음 (신규)',
     cat: '운영 형태',
     toggle: 'off',
@@ -559,3 +561,19 @@ export const STATUS_NOTES: { name: string; value: string; why: string }[] = [
     why: '켜고 끌 수 있는 설정이 아니라 현재 계약 상태를 알리는 문구',
   },
 ];
+
+/**
+ * As-Is 대비 실제로 달라진 설정인지.
+ * 표기 정리는 이름에서 접두사를 빼고 토글 모양을 맞춘 것이라 35건 전부에 해당해
+ * 개별 표시 대상이 아니다. 조작 방식이나 이름이 바뀐 것만 표시한다.
+ */
+export const CHANGED_TYPES: ChangeType[] = ['신규', '토글 분리', '명칭 변경'];
+export const isChanged = (t: ChangeType) => CHANGED_TYPES.includes(t);
+
+/** 표시 대상 설정을 유형별로 묶은 목록 */
+export function changedByType(): { type: ChangeType; items: PolicyItem[] }[] {
+  return CHANGED_TYPES.map((type) => ({
+    type,
+    items: POLICY_ITEMS.filter((i) => i.changeType === type),
+  })).filter((g) => g.items.length);
+}
