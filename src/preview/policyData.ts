@@ -18,6 +18,7 @@ export type PolicyCat =
   | '구매후기'
   | '주문·결제'
   | '회원관리'
+  | '보안'
   | '정산·재고';
 
 export const POLICY_TABS = [
@@ -27,11 +28,12 @@ export const POLICY_TABS = [
   '구매후기',
   '주문·결제',
   '회원관리',
+  '보안',
   '정산·재고',
 ] as const;
 
 /** 개편에서 무엇이 달라졌는지의 유형 — 비교표에서 묶어 보기 위한 분류 */
-export type ChangeType = '토글 분리' | '명칭 변경' | '표기 정리' | '유지';
+export type ChangeType = '신규' | '토글 분리' | '명칭 변경' | '표기 정리' | '유지';
 
 /** 옵션 영역 표현 방식 */
 export type PolicyOption =
@@ -187,12 +189,12 @@ export const POLICY_ITEMS: PolicyItem[] = [
   {
     name: '로그인 실패 계정 잠금',
     asIsName: '로그인 실패 계정 잠금',
-    cat: '회원관리',
+    cat: '보안',
     toggle: 'off',
     help: '회원이 로그인 시도할 때 5회 이상 비밀번호를 잘못 입력하면 계정 접속을 차단하고 비밀번호 재설정 안내를 진행합니다.',
     asIs: 'ON·OFF 슬라이더',
     toBe: '사용 토글',
-    diff: '조작 방식은 그대로. 회원 보안 정책이라 회원관리 탭에 둠.',
+    diff: '조작 방식은 그대로. 계정 접근 통제라 보안 탭으로 옮김.',
     changeType: '표기 정리',
   },
   {
@@ -220,13 +222,13 @@ export const POLICY_ITEMS: PolicyItem[] = [
   {
     name: '비밀번호 변경 권장 주기',
     asIsName: '비밀번호 변경 권장 주기',
-    cat: '회원관리',
+    cat: '보안',
     toggle: 'off',
     option: { kind: 'select', label: '90일' },
     help: '비밀번호 변경 권장 주기가 지난 경우, 회원이 로그인할 때 비밀번호 변경 화면으로 자동 이동합니다.',
     asIs: 'ON·OFF 슬라이더 + 드롭다운(주기)',
     toBe: '토글 + 드롭다운(주기)',
-    diff: '사용 여부를 토글로 빼내 주기 값은 켰을 때만 고름. 로그인 정책과 함께 회원관리 탭에 둠.',
+    diff: '사용 여부를 토글로 빼내 주기 값은 켰을 때만 고름. 비밀번호 정책이라 보안 탭으로 옮김.',
     changeType: '토글 분리',
   },
   {
@@ -474,6 +476,18 @@ export const POLICY_ITEMS: PolicyItem[] = [
     toBe: '체크박스(쇼핑몰 홈 / 상품 리스트)',
     diff: '조작 방식은 그대로. 둘 다 해제하면 사실상 끈 것과 같아 안내 문구를 더함.',
     changeType: '유지',
+  },
+  {
+    name: '폐쇄몰',
+    asIsName: '없음 (신규)',
+    cat: '보안',
+    toggle: 'off',
+    warn: '켜면 비회원은 어떤 경로로도 쇼핑몰을 볼 수 없습니다.',
+    help: '첫 진입 화면이 로그인으로 고정됩니다. 상품 주소나 경로를 직접 알고 들어와도 로그인 화면으로 이동합니다.',
+    asIs: '없음',
+    toBe: '사용 토글',
+    diff: '새로 넣는 설정. 회원만 볼 수 있는 쇼핑몰로 운영할 때 쓴다.',
+    changeType: '신규',
   },
   {
     name: '회원정보 작성 알림',
