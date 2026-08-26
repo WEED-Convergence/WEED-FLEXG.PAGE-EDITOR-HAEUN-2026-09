@@ -131,7 +131,9 @@ function PolicyRow({
   /** 부모 설정이 꺼져 있어 지금은 동작하지 않는 상태 */
   muted?: boolean;
 }) {
-  const stacked = Boolean(item.option && item.help);
+  // 오른쪽에 쌓이는 줄이 둘 이상이면 고정 높이를 풀어 준다.
+  // 경고 문구만 있고 옵션이 없는 행(폐쇄몰)이 44px 안에 눌리던 문제.
+  const stacked = [item.option, item.warn, item.help].filter(Boolean).length > 1;
   return (
     <Flex px="24px" py={stacked ? '12px' : undefined} h={stacked ? undefined : '44px'} gap="20px" align="center">
       {/* 상태 토글 — 없는 설정은 폭만 차지해 열을 맞춘다 */}
