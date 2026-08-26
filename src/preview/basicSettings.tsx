@@ -11,10 +11,10 @@
 import { useState } from 'react';
 import { Box, Flex, Text, Input } from '@chakra-ui/react';
 import {
-  AdminLayout, colors, FONT, Radio, Checkbox, FilledButton,
+  AdminLayout, colors, FONT, Radio, Checkbox, FilledButton, SelectInput,
   StatusToggle, PillTabs, InitialBadge,
 } from '../design-system';
-import { POLICY_TABS, rowsOfTab, type PolicyItem, type PolicyOption } from './policyData';
+import { POLICY_ITEMS, POLICY_TABS, rowsOfTab, type PolicyItem, type PolicyOption } from './policyData';
 
 // 이 화면에서 쓰는 색 — 전부 디자인 토큰에서 가져온다
 const C = {
@@ -85,6 +85,9 @@ function OptionView({ option }: { option: PolicyOption }) {
       </Flex>
     );
   }
+  if (option.kind === 'select') {
+    return <SelectInput label={option.label} width="140px" />;
+  }
   if (option.kind === 'radio-url') {
     return (
       <Flex gap="16px" align="center">
@@ -121,29 +124,44 @@ function OptionView({ option }: { option: PolicyOption }) {
 
 /** 설정 한 줄 — [상태 토글] │ [초성 뱃지 + 설정명] │ [옵션 / ⓘ 도움말] */
 function PolicyRow({
-  item, badge, anchor,
+  item, badge, anchor, on, onToggle, muted,
 }: {
   item: PolicyItem; badge?: string; anchor?: boolean;
+  on: boolean; onToggle: () => void;
+  /** 부모 설정이 꺼져 있어 지금은 동작하지 않는 상태 */
+  muted?: boolean;
 }) {
-  const [on, setOn] = useState(item.toggle === 'on');
   const stacked = Boolean(item.option && item.help);
   return (
     <Flex px="24px" py={stacked ? '12px' : undefined} h={stacked ? undefined : '44px'} gap="20px" align="center">
       {/* 상태 토글 — 없는 설정은 폭만 차지해 열을 맞춘다 */}
       <Box data-doc-mark={anchor ? 'toggle-col' : undefined} w="57px" flexShrink={0}>
-        {item.toggle !== null && <StatusToggle on={on} onToggle={() => setOn((v) => !v)} />}
+        {item.toggle !== null && <StatusToggle on={on} onToggle={onToggle} />}
       </Box>
       <Box w="1px" h="12px" bg={item.toggle !== null ? C.divider : 'transparent'} flexShrink={0} />
-      {/* 초성 뱃지 + 설정명 */}
+      {/* 초성 뱃지 + 설정명. 하위 설정은 들여쓰기와 세로선으로 계층을 보인다 */}
       <Flex data-doc-mark={anchor ? 'index-col' : undefined} gap="8px" align="center" flexShrink={0}>
         <InitialBadge letter={badge} />
-        <Text fontFamily={FONT} fontWeight="700" fontSize="12px" letterSpacing="-0.24px" color={C.label} w="200px">
-          {item.child ? `ㄴ ${item.name}` : item.name}
-        </Text>
+        <Flex w="200px" align="center">
+          {item.child && (
+            <Flex w="16px" alignSelf="stretch" justify="center" flexShrink={0}>
+              <Box w="1px" bg={C.divider} />
+            </Flex>
+          )}
+          <Text fontFamily={FONT} fontWeight="700" fontSize="12px" letterSpacing="-0.24px" color={C.label}>
+            {item.name}
+          </Text>
+        </Flex>
       </Flex>
-      {/* 옵션 + 도움말 */}
-      <Flex data-doc-mark={anchor ? 'option-col' : undefined} direction="column" gap="6px" justify="center" minW="0">
+      {/* 옵션 + 도움말. 부모가 꺼져 있으면 옅게 두고 조작을 막는다 */}
+      <Flex data-doc-mark={anchor ? 'option-col' : undefined} direction="column" gap="6px" justify="center" minW="0"
+        opacity={muted ? 0.4 : 1} pointerEvents={muted ? 'none' : undefined}>
         {item.option && <OptionView option={item.option} />}
+        {item.warn && (
+          <Text fontFamily={FONT} fontWeight="700" fontSize="12px" letterSpacing="-0.24px" color={colors.red} lineHeight="1.4">
+            ⓘ {item.warn}
+          </Text>
+        )}
         {item.help && <HelpLine text={item.help} links={item.helpLinks} />}
       </Flex>
     </Flex>
@@ -231,6 +249,11 @@ export function BasicSettings() {
     initialTab && (POLICY_TABS as readonly string[]).includes(initialTab) ? initialTab : '전체',
   );
   const rows = rowsOfTab(tab);
+  // 부모를 껐을 때 하위 설정을 옅게 처리해야 해서 토글 상태를 한곳에서 관리한다
+  const [onMap, setOnMap] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(POLICY_ITEMS.map((i) => [i.name, i.toggle === 'on'])),
+  );
+  const toggleOne = (name: string) => setOnMap((m) => ({ ...m, [name]: !m[name] }));
 
   return (
     <AdminLayout navActive="home" sidebar={LNB}>
@@ -250,10 +273,16 @@ export function BasicSettings() {
               const firstNoToggle = item.toggle === null && !rows.slice(0, i).some((r) => r.toggle === null);
               // 열 설명 마커는 토글이 있는 첫 행에 걺 — 빈 토글 자리에 마커가 붙지 않게
               const colAnchor = item.toggle !== null && !rows.slice(0, i).some((r) => r.toggle !== null);
+              // 하위 설정은 바로 위 상위 설정을 따른다. 상위가 꺼져 있으면 옅게
+              const parent = item.child
+                ? [...rows.slice(0, i)].reverse().find((r) => !r.child)
+                : undefined;
+              const muted = Boolean(parent && parent.toggle !== null && !onMap[parent.name]);
               return (
                 <Box key={item.name} data-doc-mark={firstChild ? 'child' : firstNoToggle ? 'no-toggle' : undefined}>
                   <Box px="24px"><Box h="1px" bg={C.line} /></Box>
-                  <PolicyRow item={item} badge={item.badge} anchor={colAnchor} />
+                  <PolicyRow item={item} badge={item.badge} anchor={colAnchor} muted={muted}
+                    on={!!onMap[item.name]} onToggle={() => toggleOne(item.name)} />
                 </Box>
               );
             })}

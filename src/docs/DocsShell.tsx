@@ -6,7 +6,7 @@ import { Box, Flex, Text } from '@chakra-ui/react';
 import {
   DOC_GROUPS, ALL_ENTRIES, AUTHOR, DOC_TITLE, groupTitleOf,
   AREA_COLS, pageRowsInArea, STATUS_META,
-  type DocEntry, type DocSection, type IndexRow,
+  type DocEntry, type DocSection, type IndexRow, type StateTable,
 } from './catalog';
 import { DocComments } from './DocComments';
 import { subscribe as subscribeComments, countOf, commentsOf, replyCount, type DocComment } from './commentStore';
@@ -35,6 +35,8 @@ const THEMES: Record<'light' | 'dark', Theme> = {
   },
 };
 
+const ALERT_COLOR = '#DC2626'; // 설명 안 강조(**...**) — 놓치면 안 되는 규칙에만 절제해서 쓴다
+const PREVIEW_MIN_W = 1620; // 어드민 화면이 가로 스크롤 없이 들어가는 최소 논리 폭(사이드바 238 + 본문 1360 + 여백)
 const MARK_COLOR = '#EC4899'; // 화면 위 번호 마커 색(코멘트 핀 파랑과 구분)
 
 // 오늘(작성일 기본값) — 변경일 미지정 시 표기
@@ -124,7 +126,27 @@ export function DocsShell() {
   const [marks, setMarks] = useState<MarkPos[]>([]);
   const [hoverMark, setHoverMark] = useState<string | null>(null);
 
+  // ── 프리뷰 배율 ──
+  // 어드민 화면은 최소 폭이 넓어서, 좁은 창에서는 가로 스크롤 대신 축소해 전체를 보여준다.
+  // zoom=null 이면 창 폭에 맞춰 자동(맞춤), 숫자면 사용자가 고정한 배율.
+  const [zoom, setZoom] = useState<number | null>(null);
+  const [boxW, setBoxW] = useState(0);
+  useEffect(() => {
+    const box = previewRef.current;
+    if (!box) return;
+    const ro = new ResizeObserver(([e]) => setBoxW(e.contentRect.width));
+    ro.observe(box);
+    setBoxW(box.getBoundingClientRect().width);
+    return () => ro.disconnect();
+  }, [entry]);
+  // 맞춤 배율 = 창 폭 / 화면이 필요로 하는 최소 폭. 확대는 하지 않는다.
+  const fitScale = boxW ? Math.min(1, boxW / PREVIEW_MIN_W) : 1;
+  const scale = zoom ?? fitScale;
+  const stepZoom = (d: number) =>
+    setZoom((z) => Math.min(1.5, Math.max(0.25, Math.round(((z ?? fitScale) + d) * 100) / 100)));
+
   // 같은 출처(iframe) 요소의 실제 좌표로 마커를 얹는다 — 좌표 하드코딩 없이 레이아웃 바뀌어도 안 깨짐.
+  const scaleRef = useRef(1);
   const recompute = useCallback(() => {
     const ifr = iframeRef.current, box = previewRef.current;
     if (!ifr || !box) return;
@@ -136,10 +158,11 @@ export function DocsShell() {
     const raw = Array.from(doc.querySelectorAll<HTMLElement>('[data-doc-mark]')).map((el) => {
       const r = el.getBoundingClientRect();
       // 마커는 항상 요소의 '왼쪽 위 모서리'에 앵커링(중앙 아님)
+      // iframe 안 좌표는 축소 전 값이라 배율을 곱해 화면 좌표로 옮긴다
       return {
         mark: el.getAttribute('data-doc-mark') || '',
-        x: ifrRect.left - boxRect.left + r.left,
-        y: ifrRect.top - boxRect.top + r.top,
+        x: ifrRect.left - boxRect.left + r.left * scaleRef.current,
+        y: ifrRect.top - boxRect.top + r.top * scaleRef.current,
         top: r.top,
       };
     });
@@ -147,6 +170,8 @@ export function DocsShell() {
     raw.sort((a, b) => a.top - b.top);
     setMarks(raw.map((m, i) => ({ mark: m.mark, x: m.x, y: m.y, num: i + 1 })));
   }, []);
+
+  useEffect(() => { scaleRef.current = scale; recompute(); }, [scale, recompute]);
 
   // 로드/리사이즈/주기 폴링으로 재계산(같은 출처라 스크롤·레이아웃 변화 추적)
   useEffect(() => {
@@ -294,13 +319,26 @@ export function DocsShell() {
             <Text fontSize="12px" fontWeight="700" color={t.textSub}>{entry.updatedAt ?? TODAY}</Text>
           </Flex>
           <Box w="1px" h="14px" bg={t.border} flexShrink={0} />
-          {/* 탭 칩 */}
-          {entry.tabs?.map((tab) => (
-            <Box as="button" key={tab} onClick={() => setActiveTab(tab)} px="11px" h="28px" borderRadius="7px" flexShrink={0}
-              bg={tab === activeTab ? t.accent : t.chip} cursor="pointer">
-              <Text fontSize="12px" fontWeight="700" color={tab === activeTab ? t.onAccent : t.chipText}>{tab}</Text>
-            </Box>
-          ))}
+          {/* 프리뷰 배율 — 창 폭에 맞춰 자동, 필요하면 직접 조절 */}
+          <Flex align="center" h="28px" borderRadius="7px" border={`1px solid ${t.border}`} overflow="hidden" flexShrink={0}>
+            <Flex as="button" w="26px" h="100%" align="center" justify="center" cursor="pointer"
+              _hover={{ bg: t.hover }} onClick={() => stepZoom(-0.1)} title="축소">
+              <Text fontSize="14px" fontWeight="700" color={t.textSub} lineHeight="1">−</Text>
+            </Flex>
+            <Flex as="button" px="8px" h="100%" align="center" justify="center" cursor="pointer" minW="52px"
+              borderLeft={`1px solid ${t.border}`} borderRight={`1px solid ${t.border}`}
+              bg={zoom == null ? t.chip : 'transparent'} _hover={{ bg: t.hover }}
+              onClick={() => setZoom(zoom == null ? 1 : null)}
+              title={zoom == null ? '100% 로 보기' : '창 폭에 맞추기'}>
+              <Text fontSize="11.5px" fontWeight="700" color={t.textSub} whiteSpace="nowrap">
+                {Math.round(scale * 100)}%{zoom == null ? ' 맞춤' : ''}
+              </Text>
+            </Flex>
+            <Flex as="button" w="26px" h="100%" align="center" justify="center" cursor="pointer"
+              _hover={{ bg: t.hover }} onClick={() => stepZoom(0.1)} title="확대">
+              <Text fontSize="14px" fontWeight="700" color={t.textSub} lineHeight="1">+</Text>
+            </Flex>
+          </Flex>
           {/* 코멘트 달기 — 화면 클릭으로 새 핀. 켜면 핀도 자동 노출 */}
           <Flex as="button" flexShrink={0} align="center" justify="center" h="28px" px="10px" gap="5px" borderRadius="7px"
             border={`1px solid ${commentPlace ? '#2563EB' : t.border}`} bg={commentPlace ? '#2563EB' : 'transparent'} cursor="pointer"
@@ -340,7 +378,14 @@ export function DocsShell() {
               src={iframeSrc}
               title={entry.name}
               onLoad={recompute}
-              style={{ width: '100%', height: '100%', border: 'none', display: 'block', background: '#FFFFFF' }}
+              style={{
+                // 축소한 만큼 논리 크기를 키워, 좁은 창에서도 넓은 해상도로 그린다
+                width: `${100 / scale}%`,
+                height: `${100 / scale}%`,
+                transform: `scale(${scale})`,
+                transformOrigin: 'top left',
+                border: 'none', display: 'block', background: '#FFFFFF',
+              }}
             />
 
             {/* 번호 마커 오버레이 — 요소 왼쪽 위 모서리에 앵커. 설명 패널을 닫으면(descCollapsed) 마커도 숨김 */}
@@ -402,7 +447,7 @@ export function DocsShell() {
                 <Box w="4px" h="12px" borderRadius="2px" bg={t.accent} />
                 <Text fontSize="11px" fontWeight="800" letterSpacing="0.04em" color={t.textSub}>공통</Text>
               </Flex>
-              <Text fontSize="12.5px" color={t.textSub} lineHeight="1.7" whiteSpace="pre-line">{entry.common}</Text>
+              <RichText text={entry.common} t={t} />
             </Box>
           )}
 
@@ -619,7 +664,8 @@ function SectionCard({ s, t, num, hovered, onHover }: {
           <Text fontSize="13.5px" fontWeight="800" color={t.text}>{s.title}</Text>
           {s.badge && <Text fontSize="9px" fontWeight="800" color={t.chipText} bg={t.chip} px="5px" py="1px" borderRadius="4px" letterSpacing="0.03em">{s.badge}</Text>}
         </Flex>
-        <Text fontSize="12.5px" color={t.textSub} lineHeight="1.6" whiteSpace="pre-line">{s.body}</Text>
+        {s.body && <RichText text={s.body} t={t} />}
+        {s.table && <DescTable table={s.table} t={t} />}
         {s.components && s.components.length > 0 && (
           <Box mt="8px" pt="8px" borderTop={`1px solid ${t.borderSoft}`}>
             <Text fontSize="9.5px" fontWeight="800" color={t.textMuted} letterSpacing="0.04em" pb="5px">사용된 컴포넌트</Text>
@@ -632,6 +678,54 @@ function SectionCard({ s, t, num, hovered, onHover }: {
         )}
       </Box>
     </Flex>
+  );
+}
+
+// 설명 본문 — **텍스트** 를 빨간 볼드로 강조. 그 외는 줄바꿈 그대로.
+function RichText({ text, t, size = '12.5px' }: { text: string; t: Theme; size?: string }) {
+  return (
+    <Text fontSize={size} color={t.textSub} lineHeight="1.7" whiteSpace="pre-line">
+      {text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+        part.startsWith('**') && part.endsWith('**')
+          ? <Text as="span" key={i} fontWeight="800" color={ALERT_COLOR}>{part.slice(2, -2)}</Text>
+          : part,
+      )}
+    </Text>
+  );
+}
+
+// 설명 안 표 — 문서 표는 라운드 없는 직사각형
+function DescTable({ table, t }: { table: StateTable; t: Theme }) {
+  return (
+    <Box pt="8px">
+      {table.caption && (
+        <Text fontSize="10.5px" fontWeight="800" letterSpacing="0.03em" color={t.textMuted} pb="5px">{table.caption}</Text>
+      )}
+      <Box border={`1px solid ${t.border}`} overflow="hidden">
+        <Flex bg={t.hover}>
+          {table.headers.map((h, i) => (
+            <Box key={i} flex={i === 0 ? '0 0 34%' : '1'} px="8px" py="6px" borderLeft={i ? `1px solid ${t.borderSoft}` : undefined}>
+              <Text fontSize="11px" fontWeight="800" color={t.textSub}>{h}</Text>
+            </Box>
+          ))}
+        </Flex>
+        {table.rows.map((row, ri) => (
+          <Flex key={ri} borderTop={`1px solid ${t.borderSoft}`} align="stretch">
+            {row.map((cell, ci) => (
+              <Box key={ci} flex={ci === 0 ? '0 0 34%' : '1'} px="8px" py="6px" borderLeft={ci ? `1px solid ${t.borderSoft}` : undefined}>
+                <Text fontSize="11.5px" lineHeight="1.55" fontWeight={ci === 0 ? '700' : '400'} color={ci === 0 ? t.text : t.textSub}>
+                  {cell.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+                    part.startsWith('**') && part.endsWith('**')
+                      ? <Text as="span" key={i} fontWeight="800" color={ALERT_COLOR}>{part.slice(2, -2)}</Text>
+                      : part,
+                  )}
+                </Text>
+              </Box>
+            ))}
+          </Flex>
+        ))}
+      </Box>
+    </Box>
   );
 }
 

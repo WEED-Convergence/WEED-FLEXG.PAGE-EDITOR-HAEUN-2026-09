@@ -4,7 +4,7 @@
  * ============================================================ */
 import { useState, useEffect } from 'react';
 import { Box, Flex, Text } from '@chakra-ui/react';
-import { POLICY_ITEMS, DROPPED_ITEMS, POLICY_TABS, changeCounts, type ChangeType } from './policyData';
+import { POLICY_ITEMS, EXCLUDED_ITEMS, POLICY_TABS, type ChangeType } from './policyData';
 
 // 변경 유형 뱃지 색
 const CHANGE_BG: Record<ChangeType, string> = {
@@ -33,7 +33,6 @@ export function Overview() {
   // 비교표를 설정 구분(탭)별로 좁혀 보기
   const [cmpTab, setCmpTab] = useState<string>('전체');
   const cmpItems = cmpTab === '전체' ? POLICY_ITEMS : POLICY_ITEMS.filter((i) => i.cat === cmpTab);
-  const cmpDropped = cmpTab === '전체' ? DROPPED_ITEMS : DROPPED_ITEMS.filter((d) => d.cat === cmpTab);
 
   // 스크롤 스파이 — 현재 보이는 섹션을 목차에서 하이라이트
   useEffect(() => {
@@ -65,9 +64,9 @@ export function Overview() {
   ];
   const goals: { t: string; d: string }[] = [
     { t: '사용 여부와 값의 분리', d: '기능을 켤지 말지와, 켠 뒤 어떤 값을 쓸지를 한 라디오 그룹에 섞지 않고 토글과 옵션으로 나눔.' },
-    { t: '찾는 시간 단축', d: '설정을 성격별 6개 카테고리 탭으로 나누고, 목록은 가나다순 + 초성 인덱스로 정렬해 이름만 알면 바로 찾게 함.' },
+    { t: '찾는 시간 단축', d: '설정을 성격별 6개 카테고리 탭으로 나누고, 목록은 가나다순과 초성 인덱스로 정렬해 이름만 알면 바로 찾게 함.' },
     { t: '표기 통일', d: '같은 성격의 켜고 끄는 설정을 모두 같은 토글 하나로 표현하고, 설정명에서 `기능_` 접두사를 뺌.' },
-    { t: '읽는 순서 고정', d: '한 줄을 [상태] → [이름] → [값] → [도움말] 순서로 고정해 목록을 훑을 때 시선이 흔들리지 않게 함.' },
+    { t: '읽는 순서 고정', d: '한 줄을 상태, 이름, 값, 도움말 순서로 고정해 목록을 훑을 때 시선이 흔들리지 않게 함.' },
   ];
   const metricRows = [
     ['특정 설정을 찾는 데 걸리는 시간', '이름을 알면 탭 1회 + 스크롤 없이 도달'],
@@ -75,8 +74,8 @@ export function Overview() {
     ['설정 저장 후 되돌리는 비율', '감소 (의도와 다르게 저장하는 일이 줄어듦)'],
   ];
   const scopeRows: { in: boolean; t: string; d: string }[] = [
-    { in: true, t: '포함', d: '기본설정 페이지 최상단 「쇼핑몰 정책 및 기능」 영역 — 카테고리 탭 7개 · 설정 28개 · 상태 토글 · 초성 인덱스' },
-    { in: false, t: '제외', d: '같은 페이지 아래 5개 영역(쇼핑몰 정보 · 플로팅 액션 버튼 설정 · 쇼핑몰 하단 안내 · 회사소개 · SNS 링크) — As-Is 유지' },
+    { in: true, t: '포함', d: '기본설정 페이지 맨 위 설정 영역. 카테고리 탭 7개, 설정 34개, 상태 토글, 초성 인덱스' },
+    { in: false, t: '제외', d: '같은 페이지 아래 5개 영역(쇼핑몰 정보, 플로팅 액션 버튼 설정, 쇼핑몰 하단 안내, 회사소개, SNS 링크). 기존 동일' },
   ];
   const screenAreas: [string, string, string][] = [
     ['카테고리 탭', '설정을 성격별로 나눠 보는 알약형 탭 7개', '전체 · 화면·노출 · 상품·장바구니 · 구매후기 · 주문·결제 · 회원관리 · 정산·재고'],
@@ -87,11 +86,11 @@ export function Overview() {
     ['도움말', '그 설정이 어디에 어떻게 반영되는지 설명', '옵션 아래 줄에 ⓘ 로 표기 · 연결 화면은 초록 링크'],
   ];
   const flowSteps = [
-    '디자인관리 › 기본설정으로 들어가면 「전체」 탭에 28개 설정이 가나다순으로 펼쳐진다.',
+    '디자인관리 기본설정으로 들어가면 전체 탭에 설정 34개가 가나다순으로 펼쳐진다.',
     '찾는 설정의 성격을 알면 카테고리 탭을, 이름을 알면 초성 뱃지를 훑어 위치를 잡는다.',
     '왼쪽 토글로 그 기능을 쓸지 말지 먼저 정한다.',
     '켠 설정만 오른쪽 옵션에서 값(형태·기준·기간 등)을 고른다.',
-    '영역 하단의 「변경사항 적용」으로 저장한다.',
+    '영역 하단의 변경사항 적용 버튼으로 저장한다.',
   ];
   const userRows: [string, string, string][] = [
     ['쇼핑몰 운영자', '기본설정 전체', '판매 정책·기능 on/off · 취소/재고 기준 조정'],
@@ -99,9 +98,9 @@ export function Overview() {
     ['디자이너 · 개발', '문서 열람', '개편 범위와 행 구조 확인'],
   ];
   const notes = [
-    '개편 범위는 「쇼핑몰 정책 및 기능」 한 영역이며, 아래 5개 영역은 As-Is 토글(OFF ●— ON)을 그대로 쓴다 — 한 페이지 안에서 토글 표기가 두 가지로 갈린다.',
-    'Figma 시안이 있는 탭은 「전체」와 「화면·노출」 둘뿐이고, 나머지 5개 탭은 「전체」의 순서·규칙을 그대로 적용해 구성했다.',
-    'As-Is 에 있던 설정 7개가 개편 「전체」 탭에 없다 — 제거·이관 여부가 정해지지 않아 보류로 표기한다.',
+    '개편 범위는 맨 위 설정 영역 하나이며, 아래 5개 영역은 개편 전 토글을 그대로 쓴다. 한 페이지 안에서 토글 표기가 두 가지로 갈리는데, 나머지 영역은 다음 차수에서 맞춘다.',
+    'Figma 시안이 있는 탭은 전체와 화면·노출 둘뿐이고, 나머지 5개 탭은 전체 탭의 순서와 초성 규칙을 그대로 적용해 구성했다.',
+    'As-Is 에 있는데 Figma 시안에 없는 설정 6개는 성격에 맞는 탭과 위치에 넣었다. 유료서비스 전환은 켜고 끄는 설정이 아니라 계약 상태 문구라 이 화면에서 제외했다.',
   ];
 
   const label = { fontSize: '13px', fontWeight: 800, color: GREEN, letterSpacing: '0.02em' } as const;
@@ -147,7 +146,7 @@ export function Overview() {
         borderBottom="1px solid #E4E4E7" px="48px" py="12px" align="center" gap="20px">
         <Flex align="center" gap="10px" minW="0" flex="1">
           <Text as="span" bg={GREEN} color="#fff" fontSize="11.5px" fontWeight={800} borderRadius="6px" px="8px" py="3px" flexShrink={0}>FLEXG</Text>
-          <Text fontSize="15px" fontWeight={800} letterSpacing="-0.01em" truncate>디자인관리 기본설정 — 쇼핑몰 정책 및 기능</Text>
+          <Text fontSize="15px" fontWeight={800} letterSpacing="-0.01em" truncate>디자인관리 기본설정 (쇼핑몰 정책 및 기능)</Text>
         </Flex>
         <Flex gap="8px" flexShrink={0}>
           <a href="/components" target="_blank" rel="noopener" style={{ ...linkStyle, height: '32px', padding: '0 14px', fontSize: '13px', background: '#18181B', color: '#fff' }}>컴포넌트북 열기 ↗</a>
@@ -166,7 +165,7 @@ export function Overview() {
                 <Text as="span" bg={GREEN} color="#fff" fontSize="13px" fontWeight={800} borderRadius="7px" px="11px" py="5px">FLEXG</Text>
                 <Text as="span" bg="#F1F1F3" color="#3F3F46" fontSize="13px" fontWeight={700} borderRadius="7px" px="11px" py="5px">어드민 › 디자인관리</Text>
               </Flex>
-              <Text fontSize="34px" fontWeight={800} letterSpacing="-0.02em" pb="14px">디자인관리 기본설정 — 쇼핑몰 정책 및 기능</Text>
+              <Text fontSize="34px" fontWeight={800} letterSpacing="-0.02em" pb="14px">디자인관리 기본설정 (쇼핑몰 정책 및 기능)</Text>
               <Text fontSize="16px" color="#52525B" lineHeight="1.7" maxW="900px">
                 쇼핑몰의 판매 정책과 기능을 켜고 끄는 화면. 기능 사용 여부와 세부 값이 한 줄에 뒤섞여 있던 목록을, 카테고리 탭과 상태 토글로 나눠 다시 구성한다.
               </Text>
@@ -192,7 +191,7 @@ export function Overview() {
             {/* 01 개요·배경 */}
             <Sec id="overview" n="01" t="개요 · 배경">
               <Text fontSize="15px" color="#3F3F46" lineHeight="1.9" whiteSpace="pre-line">
-                {'기본설정의 「쇼핑몰 정책 및 기능」은 쇼핑몰 운영 규칙을 한자리에서 켜고 끄는 화면이다. 그동안 설정이 한 페이지에 평면으로 나열돼 있었고, 기능을 쓸지 말지와 어떤 값을 쓸지가 같은 라디오 그룹에 섞여 있었다. `사용안함`이 선택지 안에 들어 있어 지금 켜져 있는지 꺼져 있는지부터 읽어 내야 했고, 설정명 앞에는 `기능_` 이 반복됐다.\n\n개편은 두 가지를 나눈다. 하나는 성격별 카테고리 탭으로 목록을 쪼개 찾는 범위를 좁히는 것, 다른 하나는 사용 여부를 상태 토글로 빼내 옵션에는 켠 뒤 고르는 값만 남기는 것이다. 운영자는 왼쪽에서 쓸지 말지를 먼저 정하고, 켠 설정만 오른쪽에서 값을 조정한다.'}
+                {'기본설정의 설정 영역은 쇼핑몰 운영 규칙을 한자리에서 켜고 끄는 화면이다. 그동안 설정이 한 페이지에 평면으로 나열돼 있었고, 기능을 쓸지 말지와 어떤 값을 쓸지가 같은 라디오 그룹에 섞여 있었다. `사용안함`이 선택지 안에 들어 있어 지금 켜져 있는지 꺼져 있는지부터 읽어 내야 했고, 설정명 앞에는 `기능_` 이 반복됐다.\n\n개편은 두 가지를 나눈다. 하나는 성격별 카테고리 탭으로 목록을 쪼개 찾는 범위를 좁히는 것, 다른 하나는 사용 여부를 상태 토글로 빼내 옵션에는 켠 뒤 고르는 값만 남기는 것이다. 운영자는 왼쪽에서 쓸지 말지를 먼저 정하고, 켠 설정만 오른쪽에서 값을 조정한다.'}
               </Text>
             </Sec>
 
@@ -238,7 +237,7 @@ export function Overview() {
 
             {/* 05 화면 구성 */}
             <Sec id="screen" n="05" t="화면 구성">
-              <Text fontSize="14px" color="#71717A" lineHeight="1.7" pb="14px">개편 영역의 한 줄은 다음 순서로 읽힌다 — 상태 토글 → 초성 뱃지 + 설정명 → 옵션 → 도움말.</Text>
+              <Text fontSize="14px" color="#71717A" lineHeight="1.7" pb="14px">개편 영역의 한 줄은 상태 토글, 초성 뱃지와 설정명, 옵션, 도움말 순서로 읽힌다.</Text>
               <DTable
                 cols={[{ h: '영역', w: '190px' }, { h: '설명' }, { h: '주요 데이터', w: '230px' }]}
                 rows={screenAreas.map((a) => [
@@ -261,22 +260,8 @@ export function Overview() {
             {/* 06 As-Is / To-Be 비교 */}
             <Sec id="compare" n="06" t="As-Is / To-Be 비교">
               <Text fontSize="14px" color="#71717A" lineHeight="1.7" pb="16px">
-                개편 전에는 설정 35개가 한 페이지에 평면으로 나열됐다. 기능을 쓸지 말지가 옵션 목록에 섞여 있었고, 토글이 있는 행과 없는 행이 번갈아 나와 목록을 훑는 기준이 없었다. 개편에서는 28개가 카테고리 탭 7개로 나뉘고, 사용 여부는 전부 상태 토글로 빠진다.
+                개편 전에는 설정 35개가 한 페이지에 평면으로 나열됐다. 기능을 쓸지 말지가 옵션 목록에 섞여 있었고, 토글이 있는 행과 없는 행이 번갈아 나와 목록을 훑는 기준이 없었다. 개편에서는 34개가 카테고리 탭 7개로 나뉘고, 사용 여부는 전부 상태 토글로 빠진다.
               </Text>
-
-              {/* 변경 유형별 건수 */}
-              <Flex gap="10px" pb="18px" wrap="wrap">
-                {changeCounts().map((c) => (
-                  <Flex key={c.type} bg="#fff" border="1px solid #E8E8EA" px="16px" py="12px" align="baseline" gap="8px" flex="1 1 150px">
-                    <Text fontSize="22px" fontWeight={800} color={CHANGE_FG[c.type]} lineHeight="1">{c.count}</Text>
-                    <Text fontSize="13px" fontWeight={700} color="#52525B">{c.type}</Text>
-                  </Flex>
-                ))}
-                <Flex bg="#fff" border="1px solid #E8E8EA" px="16px" py="12px" align="baseline" gap="8px" flex="1 1 150px">
-                  <Text fontSize="22px" fontWeight={800} color="#B45309" lineHeight="1">{DROPPED_ITEMS.length}</Text>
-                  <Text fontSize="13px" fontWeight={700} color="#52525B">개편 화면에 없음</Text>
-                </Flex>
-              </Flex>
 
               {/* 설정 구분(탭)별 보기 */}
               <Flex gap="6px" pb="14px" wrap="wrap" align="center">
@@ -296,7 +281,7 @@ export function Overview() {
 
               {/* 설정 대비표 */}
               <Text fontSize="15px" fontWeight={800} color="#27272A" pb="10px">
-                {cmpTab === '전체' ? `설정 ${cmpItems.length}개 — 조작 방식 대비` : `${cmpTab} — 설정 ${cmpItems.length}개`}
+                {cmpTab === '전체' ? `설정 ${cmpItems.length}개 조작 방식 대비` : `${cmpTab} 설정 ${cmpItems.length}개`}
               </Text>
               <Box overflowX="auto" pb="4px">
               <Box minW="1180px">
@@ -322,28 +307,24 @@ export function Overview() {
               </Box>
               </Box>
 
-              {/* 개편 화면에 없는 설정 */}
-              <Text fontSize="15px" fontWeight={800} color="#27272A" pt="34px" pb="6px">
-                개편 화면에 없는 설정 {cmpDropped.length}개{cmpTab === '전체' ? '' : ` — ${cmpTab}`}
-              </Text>
-              <Text fontSize="14px" color="#71717A" lineHeight="1.7" pb="12px">
-                「전체」 탭이 전체 목록이므로 잘려서 안 보이는 것이 아니라 실제로 빠져 있다. 제거인지 다른 화면으로의 이관인지 정해지지 않아 보류로 둔다.
-              </Text>
-              <Box overflowX="auto" pb="4px">
-              <Box minW="900px">
-              <DTable
-                cols={[{ h: '설정명', w: '330px' }, { h: 'As-Is 조작 방식', w: '300px' }, { h: '원래 성격' }, { h: '처리 방침', w: '96px' }]}
-                rows={cmpDropped.map((d) => [
-                  <Text key="a" fontSize="14px" fontWeight={700} color="#27272A" lineHeight="1.55">{d.name}</Text>,
-                  <Text key="b" fontSize="13px" color="#71717A" lineHeight="1.6">{d.asIs}</Text>,
-                  <Text key="c" fontSize="13px" color="#71717A" lineHeight="1.6">{d.cat}</Text>,
-                  <Flex key="d">
-                    <Text as="span" fontSize="11.5px" fontWeight={800} borderRadius="6px" px="8px" py="4px" bg="#FDF0E1" color="#B45309" whiteSpace="nowrap">보류</Text>
-                  </Flex>,
-                ])}
-              />
-              </Box>
-              </Box>
+              {/* 이 화면에서 다루지 않는 항목 */}
+              {cmpTab === '전체' && (
+                <>
+                  <Text fontSize="15px" fontWeight={800} color="#27272A" pt="34px" pb="6px">이 화면에서 다루지 않는 항목</Text>
+                  <Box overflowX="auto" pb="4px">
+                  <Box minW="900px">
+                  <DTable
+                    cols={[{ h: '항목', w: '260px' }, { h: 'As-Is 표현', w: '300px' }, { h: '제외한 이유' }]}
+                    rows={EXCLUDED_ITEMS.map((d) => [
+                      <Text key="a" fontSize="14px" fontWeight={700} color="#27272A" lineHeight="1.55">{d.name}</Text>,
+                      <Text key="b" fontSize="13px" color="#71717A" lineHeight="1.6">{d.asIs}</Text>,
+                      <Text key="c" fontSize="13px" color="#52525B" lineHeight="1.65">{d.why}</Text>,
+                    ])}
+                  />
+                  </Box>
+                  </Box>
+                </>
+              )}
 
               {/* 목록 구조 자체의 변화 */}
               <Text fontSize="15px" fontWeight={800} color="#27272A" pt="34px" pb="10px">목록 구조</Text>

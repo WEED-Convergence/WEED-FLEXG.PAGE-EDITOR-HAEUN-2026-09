@@ -41,6 +41,8 @@ export type PolicyOption =
   | { kind: 'check'; items: string[]; checked: number[] }
   /** 라디오 + 뒤따르는 입력칸 (1:1 문의버튼) */
   | { kind: 'radio-url'; items: string[]; selected: number; value: string }
+  /** 드롭다운 하나 (선물하기 기한, 비밀번호 주기 등) */
+  | { kind: 'select'; label: string }
   /** 라디오 2개 중 두 번째가 [접두어][숫자][단위] 형태 (구매후기 작성 기간·조건) */
   | {
       kind: 'radio-num';
@@ -71,6 +73,8 @@ export interface PolicyItem {
   help?: string;
   /** 도움말 안에서 초록으로 강조되는 링크 문구 */
   helpLinks?: string[];
+  /** 놓치면 손실이 생기는 예외. 도움말 위에 빨간 문구로 붙인다 */
+  warn?: string;
   /** 개편 전 조작 방식 */
   asIs: string;
   /** 개편 후 조작 방식 */
@@ -181,6 +185,17 @@ export const POLICY_ITEMS: PolicyItem[] = [
     changeType: '표기 정리',
   },
   {
+    name: '로그인 실패 계정 잠금',
+    asIsName: '로그인 실패 계정 잠금',
+    cat: '회원관리',
+    toggle: 'off',
+    help: '회원이 로그인 시도할 때 5회 이상 비밀번호를 잘못 입력하면 계정 접속을 차단하고 비밀번호 재설정 안내를 진행합니다.',
+    asIs: 'ON·OFF 슬라이더',
+    toBe: '사용 토글',
+    diff: '조작 방식은 그대로. 회원 보안 정책이라 회원관리 탭에 둠.',
+    changeType: '표기 정리',
+  },
+  {
     name: '복사 방지',
     asIsName: '기능_복사 방지',
     cat: '화면·노출',
@@ -201,6 +216,18 @@ export const POLICY_ITEMS: PolicyItem[] = [
     toBe: '사용 토글',
     diff: '조작 방식 동일. 표기만 통일.',
     changeType: '표기 정리',
+  },
+  {
+    name: '비밀번호 변경 권장 주기',
+    asIsName: '비밀번호 변경 권장 주기',
+    cat: '회원관리',
+    toggle: 'off',
+    option: { kind: 'select', label: '90일' },
+    help: '비밀번호 변경 권장 주기가 지난 경우, 회원이 로그인할 때 비밀번호 변경 화면으로 자동 이동합니다.',
+    asIs: 'ON·OFF 슬라이더 + 드롭다운(주기)',
+    toBe: '토글 + 드롭다운(주기)',
+    diff: '사용 여부를 토글로 빼내 주기 값은 켰을 때만 고름. 로그인 정책과 함께 회원관리 탭에 둠.',
+    changeType: '토글 분리',
   },
   {
     name: '배송지 확인 팝업',
@@ -231,6 +258,30 @@ export const POLICY_ITEMS: PolicyItem[] = [
     asIs: 'ON·OFF 슬라이더',
     toBe: '사용 토글',
     diff: '조작 방식 동일. 표기만 통일.',
+    changeType: '표기 정리',
+  },
+  {
+    name: '선물하기 배송지 입력 기한',
+    asIsName: '기능_선물하기 (배송지 입력 기한)',
+    cat: '주문·결제',
+    toggle: null,
+    option: { kind: 'select', label: '+7일' },
+    help: '입금확인일 기준으로 선물 받는 사람이 배송지를 입력할 수 있는 기간입니다.',
+    asIs: '드롭다운(+7일) + 입금확인일 기준 문구',
+    toBe: '드롭다운(기한)',
+    diff: '이름 앞에 반복되던 기능_선물하기를 풀어 한 줄로 씀. 주문 단계 정책이라 주문·결제 탭에 둠.',
+    changeType: '표기 정리',
+  },
+  {
+    name: '선물하기 배송지 입력 요청 메시지',
+    asIsName: '기능_선물하기 (배송지 입력 요청 메시지 발송 조건)',
+    cat: '주문·결제',
+    toggle: null,
+    option: { kind: 'select', label: '1일 주기' },
+    help: '받는 사람이 배송지를 입력하지 않은 경우, 배송지 입력을 안내하는 메시지가 이 주기로 발송됩니다.',
+    asIs: '드롭다운(발송 주기)',
+    toBe: '드롭다운(발송 주기)',
+    diff: '배송지 입력 기한 바로 아래에 붙여 선물하기 설정을 모음.',
     changeType: '표기 정리',
   },
   {
@@ -336,11 +387,23 @@ export const POLICY_ITEMS: PolicyItem[] = [
     cat: '정산·재고',
     toggle: null,
     option: { kind: 'radio', items: ['입금확인(완료) 기준', '주문 기준'], selected: 0 },
+    warn: '무통장, 가상계좌 결제수단은 무조건 재고 차감됩니다.',
     help: '입금확인(완료) 기준 : 결제 또는 주문 완료시 재고 수가 차감 / 주문 기준 : 결제하기 버튼 클릭시 재고 차감',
     asIs: '라디오(결제 완료 기준 / 주문 기준) + 빨간 경고 문구',
-    toBe: '라디오(입금확인(완료) 기준 / 주문 기준)',
-    diff: '`결제 완료 기준` → `입금확인(완료) 기준`. 「무통장·가상계좌는 무조건 재고 차감」 경고 문구가 개편 화면에 없음.',
+    toBe: '라디오(입금확인(완료) 기준 / 주문 기준) + 빨간 경고 문구',
+    diff: '기준 이름을 결제 완료에서 입금확인(완료)으로 바꿈. 무통장과 가상계좌 예외 경고는 손실로 이어질 수 있어 그대로 둠.',
     changeType: '명칭 변경',
+  },
+  {
+    name: '재고옵션 품절 시 옵션값 자동 숨김',
+    asIsName: '기능_재고옵션 품절시, 옵션값 자동 숨김',
+    cat: '상품·장바구니',
+    toggle: 'off',
+    help: '상품 재고 옵션을 사용할 경우, 품절 표시를 하거나 해당 옵션값을 숨길 수 있습니다.',
+    asIs: '라디오(사용 / 사용 안함)',
+    toBe: '사용 토글',
+    diff: '사용 여부만 정하는 설정이라 라디오를 토글로 바꿈. 상품 옵션 정책이라 상품·장바구니 탭에 둠.',
+    changeType: '토글 분리',
   },
   {
     name: '취소/반품 재고 처리',
@@ -352,6 +415,18 @@ export const POLICY_ITEMS: PolicyItem[] = [
     toBe: '라디오(재고 원복 / 재고 원복 안함)',
     diff: '본 설정은 그대로. 미입금 주문건 예외 규칙이 개편 화면에 없음.',
     changeType: '유지',
+  },
+  {
+    name: '미입금 주문건 재고 처리',
+    asIsName: '미입금 취소/반품 재고 처리',
+    cat: '정산·재고',
+    toggle: null,
+    child: true,
+    option: { kind: 'radio', items: ['미입금 주문건 원복', '미입금 주문건 원복 안함'], selected: 0 },
+    asIs: '별도 행 라디오(미입금 주문건 원복 / 원복 안함)',
+    toBe: '취소/반품 재고 처리 아래 하위 설정',
+    diff: '취소/반품 재고 처리의 예외 규칙이라 별도 행 대신 하위 설정으로 붙임.',
+    changeType: '표기 정리',
   },
   {
     name: '카카오 싱크 자동 로그인',
@@ -393,10 +468,11 @@ export const POLICY_ITEMS: PolicyItem[] = [
     cat: '화면·노출',
     toggle: null,
     option: { kind: 'check', items: ['쇼핑몰 홈', '상품 리스트'], checked: [0] },
+    warn: '둘 다 해제하면 탭바가 어디에도 노출되지 않습니다.',
     help: '탭바 메뉴는 하단에 고정되어 노출되는 영역입니다.',
     asIs: '체크박스(쇼핑몰 홈 / 상품 리스트)',
     toBe: '체크박스(쇼핑몰 홈 / 상품 리스트)',
-    diff: '조작 방식 그대로.',
+    diff: '조작 방식은 그대로. 둘 다 해제하면 사실상 끈 것과 같아 안내 문구를 더함.',
     changeType: '유지',
   },
   {
@@ -458,21 +534,14 @@ export function rowsOfTab(tab: string): (PolicyItem & { badge?: string })[] {
 }
 
 /**
- * As-Is 에는 있었으나 개편 화면에서 빠진 설정 — 처리 방침 미정(보류).
- * 화면에 그리지 않고 문서(개요 비교표 · 설명 패널)에서만 다룬다.
+ * 이 화면에서 다루지 않는 항목.
+ * 정책을 켜고 끄는 설정이 아니라 계약 상태를 알리는 문구라, 설정 목록에 두면
+ * 조작할 수 있는 것처럼 읽힌다. 서비스 이용 안내 영역에서 다루는 편이 맞다.
  */
-export const DROPPED_ITEMS: { name: string; asIs: string; cat: string }[] = [
-  { name: '기능_재고옵션 품절시, 옵션값 자동 숨김', asIs: '라디오(사용 / 사용 안함)', cat: '상품·장바구니' },
-  { name: '기능_선물하기 — 배송지 입력 기한', asIs: '드롭다운(+7일) + 입금확인일 기준 문구', cat: '주문·결제' },
-  { name: '기능_선물하기 — 배송지 입력 요청 메시지 발송 조건', asIs: '드롭다운(발송 주기)', cat: '주문·결제' },
-  { name: '비밀번호 변경 권장 주기', asIs: 'ON·OFF 슬라이더 + 드롭다운(주기)', cat: '회원관리' },
-  { name: '로그인 실패 계정 잠금', asIs: 'ON·OFF 슬라이더', cat: '회원관리' },
-  { name: '미입금 취소/반품 재고 처리', asIs: '라디오(미입금 주문건 원복 / 원복 안함)', cat: '정산·재고' },
-  { name: '기능_유료서비스 전환', asIs: '상태 텍스트(전환 완료)', cat: '해당 없음' },
+export const EXCLUDED_ITEMS: { name: string; asIs: string; why: string }[] = [
+  {
+    name: '기능_유료서비스 전환',
+    asIs: '상태 텍스트(유료서비스 전환 완료)',
+    why: '켜고 끌 수 있는 설정이 아니라 현재 계약 상태를 알리는 문구',
+  },
 ];
-
-/** 변경 유형별 건수 — 개요 비교표 요약에 쓴다 */
-export function changeCounts(): { type: ChangeType; count: number }[] {
-  const order: ChangeType[] = ['토글 분리', '명칭 변경', '표기 정리', '유지'];
-  return order.map((type) => ({ type, count: POLICY_ITEMS.filter((i) => i.changeType === type).length }));
-}
