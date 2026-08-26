@@ -417,16 +417,16 @@ export const POLICY_ITEMS: PolicyItem[] = [
     changeType: '유지',
   },
   {
-    name: '미입금 주문건 재고 처리',
+    // 이름 앞을 짝과 맞춰, 가나다순에서 취소/반품 재고 처리 바로 뒤에 오게 한다
+    name: '취소/반품 재고 처리 - 미입금',
     asIsName: '미입금 취소/반품 재고 처리',
     cat: '정산·재고',
     toggle: null,
-    child: true,
     option: { kind: 'radio', items: ['미입금 주문건 원복', '미입금 주문건 원복 안함'], selected: 0 },
-    asIs: '별도 행 라디오(미입금 주문건 원복 / 원복 안함)',
-    toBe: '취소/반품 재고 처리 아래 하위 설정',
-    diff: '취소/반품 재고 처리의 예외 규칙이라 별도 행 대신 하위 설정으로 붙임.',
-    changeType: '표기 정리',
+    asIs: '라디오(미입금 주문건 원복 / 원복 안함)',
+    toBe: '라디오(미입금 주문건 원복 / 원복 안함)',
+    diff: '조작 방식은 그대로. 이름 앞을 짝과 맞춰 가나다순에서 나란히 오게 함.',
+    changeType: '명칭 변경',
   },
   {
     name: '카카오 싱크 자동 로그인',
@@ -534,14 +534,14 @@ export function rowsOfTab(tab: string): (PolicyItem & { badge?: string })[] {
 }
 
 /**
- * 이 화면에서 다루지 않는 항목.
- * 정책을 켜고 끄는 설정이 아니라 계약 상태를 알리는 문구라, 설정 목록에 두면
- * 조작할 수 있는 것처럼 읽힌다. 서비스 이용 안내 영역에서 다루는 편이 맞다.
+ * 조작할 수 없는 상태 안내.
+ * 켜고 끄는 설정이 아니라 현재 계약 상태를 알리는 문구라, 탭으로 나뉘는 설정 목록에
+ * 섞지 않고 설정 영역 맨 아래에 안내줄로 따로 둔다.
  */
-export const EXCLUDED_ITEMS: { name: string; asIs: string; why: string }[] = [
+export const STATUS_NOTES: { name: string; value: string; why: string }[] = [
   {
-    name: '기능_유료서비스 전환',
-    asIs: '상태 텍스트(유료서비스 전환 완료)',
+    name: '유료서비스 전환',
+    value: '유료서비스 전환 완료',
     why: '켜고 끌 수 있는 설정이 아니라 현재 계약 상태를 알리는 문구',
   },
 ];

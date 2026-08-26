@@ -4,7 +4,7 @@
  * ============================================================ */
 import { useState, useEffect } from 'react';
 import { Box, Flex, Text } from '@chakra-ui/react';
-import { POLICY_ITEMS, EXCLUDED_ITEMS, POLICY_TABS, type ChangeType } from './policyData';
+import { POLICY_ITEMS, STATUS_NOTES, POLICY_TABS, type ChangeType } from './policyData';
 
 // 변경 유형 뱃지 색
 const CHANGE_BG: Record<ChangeType, string> = {
@@ -100,7 +100,7 @@ export function Overview() {
   const notes = [
     '개편 범위는 맨 위 설정 영역 하나이며, 아래 5개 영역은 개편 전 토글을 그대로 쓴다. 한 페이지 안에서 토글 표기가 두 가지로 갈리는데, 나머지 영역은 다음 차수에서 맞춘다.',
     'Figma 시안이 있는 탭은 전체와 화면·노출 둘뿐이고, 나머지 5개 탭은 전체 탭의 순서와 초성 규칙을 그대로 적용해 구성했다.',
-    'As-Is 에 있는데 Figma 시안에 없는 설정 6개는 성격에 맞는 탭과 위치에 넣었다. 유료서비스 전환은 켜고 끄는 설정이 아니라 계약 상태 문구라 이 화면에서 제외했다.',
+    'As-Is 에 있는데 Figma 시안에 없는 설정 6개는 성격에 맞는 탭과 위치에 넣었다. 유료서비스 전환은 켜고 끄는 설정이 아니라 계약 상태 문구라, 탭 목록에서 빼고 설정 영역 맨 아래 안내줄로 뒀다.',
   ];
 
   const label = { fontSize: '13px', fontWeight: 800, color: GREEN, letterSpacing: '0.02em' } as const;
@@ -310,14 +310,17 @@ export function Overview() {
               {/* 이 화면에서 다루지 않는 항목 */}
               {cmpTab === '전체' && (
                 <>
-                  <Text fontSize="15px" fontWeight={800} color="#27272A" pt="34px" pb="6px">이 화면에서 다루지 않는 항목</Text>
+                  <Text fontSize="15px" fontWeight={800} color="#27272A" pt="34px" pb="6px">조작할 수 없는 상태 안내</Text>
+                  <Text fontSize="14px" color="#71717A" lineHeight="1.7" pb="12px">
+                    켜고 끄는 설정이 아니라 계약 상태를 알리는 문구다. 탭으로 나뉘는 설정 목록에 섞지 않고 설정 영역 맨 아래에 안내줄로 따로 뒀다.
+                  </Text>
                   <Box overflowX="auto" pb="4px">
                   <Box minW="900px">
                   <DTable
-                    cols={[{ h: '항목', w: '260px' }, { h: 'As-Is 표현', w: '300px' }, { h: '제외한 이유' }]}
-                    rows={EXCLUDED_ITEMS.map((d) => [
+                    cols={[{ h: '항목', w: '260px' }, { h: '표시 내용', w: '300px' }, { h: '목록에 두지 않은 이유' }]}
+                    rows={STATUS_NOTES.map((d) => [
                       <Text key="a" fontSize="14px" fontWeight={700} color="#27272A" lineHeight="1.55">{d.name}</Text>,
-                      <Text key="b" fontSize="13px" color="#71717A" lineHeight="1.6">{d.asIs}</Text>,
+                      <Text key="b" fontSize="13px" color="#71717A" lineHeight="1.6">{d.value}</Text>,
                       <Text key="c" fontSize="13px" color="#52525B" lineHeight="1.65">{d.why}</Text>,
                     ])}
                   />

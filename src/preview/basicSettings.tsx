@@ -14,7 +14,7 @@ import {
   AdminLayout, colors, FONT, Radio, Checkbox, FilledButton, SelectInput,
   StatusToggle, PillTabs, InitialBadge,
 } from '../design-system';
-import { POLICY_ITEMS, POLICY_TABS, rowsOfTab, type PolicyItem, type PolicyOption } from './policyData';
+import { POLICY_ITEMS, POLICY_TABS, STATUS_NOTES, rowsOfTab, type PolicyItem, type PolicyOption } from './policyData';
 
 // 이 화면에서 쓰는 색 — 전부 디자인 토큰에서 가져온다
 const C = {
@@ -287,6 +287,24 @@ export function BasicSettings() {
               );
             })}
             <Box px="24px"><Box h="1px" bg={C.line} /></Box>
+          </Box>
+
+          {/* 조작할 수 없는 상태 안내 — 탭으로 나뉘는 설정 목록과 섞지 않는다 */}
+          <Box data-doc-mark="status-note" pt="12px">
+            {STATUS_NOTES.map((n) => (
+              <Flex key={n.name} px="24px" py="10px" gap="20px" align="center"
+                bg="white" border={`1px solid ${C.line}`} borderRadius="6px">
+                <Box w="57px" flexShrink={0} />
+                <Box w="1px" h="12px" flexShrink={0} />
+                <Flex gap="8px" align="center" flexShrink={0}>
+                  <Box w="16px" h="16px" flexShrink={0} />
+                  <Text fontFamily={FONT} fontWeight="700" fontSize="12px" letterSpacing="-0.24px" color={C.label} w="200px">
+                    {n.name}
+                  </Text>
+                </Flex>
+                <Text fontFamily={FONT} fontSize="12px" letterSpacing="-0.24px" color={C.label}>{n.value}</Text>
+              </Flex>
+            ))}
           </Box>
         </SetBox>
 
