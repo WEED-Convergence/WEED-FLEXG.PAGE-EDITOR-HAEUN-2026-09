@@ -1,9 +1,9 @@
 {
-  "name": "flexg-docs-template",
+  "name": "flexg-admin-design-basic-settings",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "기획 문서(HY Docs) 표준 템플릿 — 3분할 레이아웃 · 라이트/다크 테마 · 화면 위 번호 마커 · 피그마식 핀 코멘트",
+  "description": "FLEXG 어드민 · 디자인관리 > 기본설정(쇼핑몰 정책 및 기능) UI/UX 개편 기획 문서",
   "author": "김희연",
   "//": "docs 시스템 개발 : 김희연 / 2026.06.01",
   "scripts": {

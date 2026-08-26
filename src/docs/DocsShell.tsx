@@ -200,7 +200,7 @@ export function DocsShell() {
           </Flex>
           {/* 컴포넌트 바로가기 — 타이틀 아래 작은 링크 */}
           <Box px="16px" pb="12px">
-            <Flex as="button" align="center" gap="5px" onClick={() => { window.location.href = '/components'; }} cursor="pointer" title="주요 컴포넌트 카탈로그로 이동"
+            <Flex as="button" align="center" gap="5px" onClick={() => window.open('/components', '_blank', 'noopener')} cursor="pointer" title="주요 컴포넌트 카탈로그를 새 창으로 열기"
               _hover={{ '& svg': { stroke: t.text }, '& p': { color: t.text } }}>
               <IconGrid s={12} c={t.textMuted} />
               <Text fontSize="11.5px" fontWeight="700" color={t.textMuted}>컴포넌트 바로가기 ↗</Text>

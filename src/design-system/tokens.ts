@@ -8,6 +8,13 @@ export const colors = {
   red: '#FF2F2F', // FgRed — N 뱃지, LIVE
   green: '#29BC25', // FgGreenX — 활성 메뉴, shopId, 수수료
   blue: '#2563EB', // FgBlue — 체크박스·라디오 선택색(디자인 규칙)
+  // 2026-08-26 추가 — 디자인관리 기본설정 개편(설정 목록)
+  greenToggle: '#32C243', // FgGreenOn — 상태 토글 켜짐 · 알약탭 활성
+  blueRadio: '#0178D4', // FgBlueSel — 설정 목록 라디오 선택 테두리
+  grF1: '#F1F1F1', // FgGrF1 — 알약탭 비활성 배경
+  gr99: '#999999', // FgGr99 — 알약탭 비활성 글자
+  grAA: '#AAAAAA', // FgGrAA — 상태 토글 꺼짐 글자
+  grD9: '#D9D9D9', // FgGrD9 — 설정 행 안 세로 구분 바
   // 그레이 스케일 (Figma 토큰명 그대로)
   gr22: '#222222',
   gr42: '#424242', // 섹션 제목, 본문 강조

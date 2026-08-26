@@ -23,3 +23,18 @@ export {
   SectionHead, StatCard, StatusPill, PillStatCard, InfoCard, SubBox,
   LabelValueTable, KVColumns, PromoBanner, AdBanner, NoticeList, Stars,
 } from './components/flexg/admin/dashboardAtoms';
+// FLEXG · 어드민 — 설정 폼 구성요소
+export {
+  SectionTitle, Row, Section, TextInput, NumberWithUnit, HelperText,
+  Radio, Checkbox, Toggle, Segmented, Lit, SelectInput,
+} from './components/flexg/admin/formParts';
+// FLEXG · 어드민 — 버튼·입력·목록 공통
+export {
+  FilledButton, OutlineButton, InputBox, SelectBox, Pagination, ListSearch, RequiredLabel,
+} from './components/flexg/admin/parts';
+export type { SelectOption } from './components/flexg/admin/parts';
+// FLEXG · 어드민 — 탭·표·배지
+export { TabStrip, StatusBadge, MiniButton, DataTable } from './components/flexg/admin/atoms';
+export type { LiveStatus, TableColumn } from './components/flexg/admin/atoms';
+// FLEXG · 어드민 — 설정 목록(정책·기능) 구성요소 · 2026-08-26 추가
+export { StatusToggle, PillTabs, InitialBadge } from './components/flexg/admin/policyParts';

@@ -16,6 +16,7 @@ import {
 } from '../components/flexg/admin/formParts';
 import { LInput, LCheck, LPager, LDateModal } from '../components/flexg/admin/discountUi';
 import { TabStrip, StatusBadge, DataTable, MiniButton } from '../components/flexg/admin/atoms';
+import { StatusToggle, PillTabs, InitialBadge } from '../components/flexg/admin/policyParts';
 import { SectionHead, StatCard, StatusPill, PillStatCard, InfoCard, SubBox, LabelValueTable, KVColumns, PromoBanner as DashPromoBanner, AdBanner, NoticeList, Stars } from '../components/flexg/admin/dashboardAtoms';
 import { asset as adminAsset } from '../tokens';
 // 송출앱
@@ -29,6 +30,8 @@ import { ShopToast } from '../components/flexg/shop/ShopToast';
 import { ShareSheet } from '../components/flexg/shop/ShareSheet';
 
 const CHROME = "'Pretendard', system-ui, sans-serif"; // 갤러리 크롬 폰트(컴포넌트 자체는 자기 폰트 유지)
+// 추가일 표기 — 2026-08-26 → 260826
+const ymd = (d: string) => d.replace(/-/g, '').slice(2);
 
 // ── 상태가 필요한 컴포넌트용 미리보기 래퍼 ──
 function RadioDemo() {
@@ -77,6 +80,14 @@ function SectionDemo() {
       </Section>
     </Box>
   );
+}
+function StatusToggleDemo() {
+  const [on, setOn] = useState(true);
+  return <StatusToggle on={on} onToggle={() => setOn((v) => !v)} />;
+}
+function PillTabsDemo() {
+  const [t, setT] = useState('전체');
+  return <PillTabs tabs={['전체', '화면·노출', '상품·장바구니', '구매후기', '주문·결제']} active={t} onChange={setT} />;
 }
 function TabStripDemo() {
   const [t, setT] = useState('라이브 상품');
@@ -131,6 +142,7 @@ interface CompEntry {
   category?: DocCategory;   // 좌측 대분류(기본 Components)
   status?: DocStatus;       // 상태 뱃지(기본 Stable)
   scope?: string;           // 사용 범위 뱃지(예: 공통 · 어드민) — 미지정 시 area
+  addedAt?: string;         // 추가일(YYYY-MM-DD) — 좌측 목록에 NEW 뱃지 + 날짜로 표기
   variants?: VariantBlock[]; // Variants 섹션(상태/색/사이즈별)
   guidelines?: Guidelines;   // Guidelines 섹션
 }
@@ -433,6 +445,87 @@ const GROUPS: AreaGroup[] = [
         css: `.cv-tabs{display:inline-flex;background:var(--FgGrF8);border-radius:8px;padding:3px;gap:2px;font-family:'Nanum Gothic',sans-serif;}
 .cv-tabs__tab{border:0;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:500;color:var(--FgGr72);background:transparent;cursor:pointer;}
 .cv-tabs__tab--active{font-weight:700;color:var(--FgGreenX);background:var(--FgWh);}` },
+      { name: 'StatusToggle', source: 'admin/policyParts', category: 'Components', status: 'Draft', scope: '어드민', addedAt: '2026-08-26',
+        desc: '켜짐·꺼짐 상태를 글자로 품은 토글.\n토글 안에 「사용」 / 「해제」가 들어가 있어, 좌우 OFF·ON 글자를 읽지 않아도 현재 상태를 바로 알 수 있다.\n설정을 줄줄이 늘어놓는 목록에서 한 열로 상태를 훑을 때 쓴다.',
+        tags: ['on', 'onToggle', 'onLabel', 'offLabel'],
+        render: () => <StatusToggleDemo />,
+        variants: [
+          { title: 'States', desc: '켜짐 · 꺼짐', render: () => (<Flex gap="20px" align="center"><VLabel name="on"><StatusToggle on onToggle={() => {}} /></VLabel><VLabel name="off"><StatusToggle on={false} onToggle={() => {}} /></VLabel></Flex>) },
+          { title: '라벨 교체', desc: '문맥에 맞는 상태 표현', render: () => (<Flex gap="20px" align="center"><VLabel name="사용/해제"><StatusToggle on onToggle={() => {}} /></VLabel><VLabel name="노출/숨김"><StatusToggle on onToggle={() => {}} onLabel="노출" offLabel="숨김" /></VLabel></Flex>) },
+          { title: '기존 Toggle 과 비교', desc: '같은 뜻, 다른 표기 — 한 화면에 섞어 쓰지 않는다', render: () => (<Flex gap="28px" align="center"><VLabel name="StatusToggle"><StatusToggle on onToggle={() => {}} /></VLabel><VLabel name="Toggle (기존)"><Toggle on onToggle={() => {}} /></VLabel></Flex>) },
+        ],
+        props: [
+          { name: 'on', type: 'boolean', required: true, desc: '켜짐 여부' },
+          { name: 'onToggle', type: '() => void', required: true, desc: '전환 이벤트' },
+          { name: 'onLabel', type: 'string', def: "'사용'", desc: '켜짐 상태 글자' },
+          { name: 'offLabel', type: 'string', def: "'해제'", desc: '꺼짐 상태 글자' },
+        ],
+        guidelines: {
+          do: ['기능을 쓸지 말지가 핵심인 설정에 쓴다.', '한 목록 안에서는 이 토글로 표기를 통일한다.'],
+          dont: ['같은 화면에서 기존 Toggle 과 섞어 쓰지 않는다.', '값을 고르는 용도(라디오가 맞는 자리)에 쓰지 않는다.'],
+          note: ['꺼도 옆 옵션의 선택값은 지우지 않는다 — 다시 켜면 이전 값으로 돌아간다.'],
+        },
+        code: `<StatusToggle on={on} onToggle={() => setOn((v) => !v)} />\n<StatusToggle on={on} onToggle={toggle} onLabel="노출" offLabel="숨김" />`,
+        html: `<button class="cv-stoggle cv-stoggle--on" aria-pressed="true">
+  <span class="cv-stoggle__label">사용</span>
+  <span class="cv-stoggle__knob"></span>
+</button>`,
+        css: `.cv-stoggle{display:inline-flex;align-items:center;gap:0;padding:4px;border:0;border-radius:100px;
+  background:var(--FgGrE8);box-shadow:inset 1px 1px 4px rgba(0,0,0,0.1);cursor:pointer;font-family:'Nanum Gothic',sans-serif;}
+.cv-stoggle--on{background:var(--FgGreenOn);box-shadow:inset 1px 1px 2px rgba(0,0,0,0.18);}
+.cv-stoggle__knob{width:16px;height:16px;border-radius:50%;background:var(--FgWh);box-shadow:0 1px 2px rgba(0,0,0,0.2);}
+.cv-stoggle__label{padding:0 6px;font-size:10px;font-weight:700;letter-spacing:-0.2px;color:var(--FgGrAA);}
+.cv-stoggle--on .cv-stoggle__label{color:var(--FgWh);}` },
+      { name: 'PillTabs', source: 'admin/policyParts', category: 'Components', status: 'Draft', scope: '어드민', addedAt: '2026-08-26',
+        desc: '같은 목록을 성격별로 좁혀 보는 알약형 탭.\n화면 콘텐츠를 통째로 바꾸는 TabStrip 과 달리, 보고 있는 목록에 필터를 거는 성격이다.\n항목이 많은 설정·목록 화면에서 찾는 범위를 줄일 때 쓴다.',
+        tags: ['tabs', 'active', 'onChange'],
+        render: () => <PillTabsDemo />,
+        variants: [
+          { title: 'States', desc: '활성 · 비활성', render: () => (<Flex gap="20px" align="center"><VLabel name="active"><PillTabs tabs={['전체']} active="전체" onChange={() => {}} /></VLabel><VLabel name="default"><PillTabs tabs={['화면·노출']} active="전체" onChange={() => {}} /></VLabel></Flex>) },
+          { title: 'TabStrip 과 비교', desc: '필터형(알약) vs 화면 전환형(사각)', render: () => (<Flex direction="column" gap="14px"><PillTabs tabs={['전체', '화면·노출', '구매후기']} active="전체" onChange={() => {}} /><TabStrip tabs={['라이브 상품', '라이브 배너']} active="라이브 상품" onChange={() => {}} /></Flex>) },
+        ],
+        props: [
+          { name: 'tabs', type: 'readonly string[]', required: true, desc: '탭 라벨 목록' },
+          { name: 'active', type: 'string', required: true, desc: '현재 활성 탭' },
+          { name: 'onChange', type: '(t: string) => void', required: true, desc: '전환 이벤트' },
+        ],
+        guidelines: {
+          do: ['첫 탭은 「전체」로 두어 전체 목록으로 돌아올 길을 남긴다.', '탭을 바꿔도 목록의 정렬 순서는 유지한다.'],
+          dont: ['탭마다 완전히 다른 화면을 띄우지 않는다 — 그건 TabStrip 자리다.'],
+        },
+        code: `<PillTabs tabs={['전체', '화면·노출', '구매후기']} active={tab} onChange={setTab} />`,
+        html: `<div class="cv-pilltabs">
+  <button class="cv-pilltabs__tab cv-pilltabs__tab--active">전체</button>
+  <button class="cv-pilltabs__tab">화면·노출</button>
+</div>`,
+        css: `.cv-pilltabs{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;font-family:'Nanum Gothic',sans-serif;}
+.cv-pilltabs__tab{border:0;border-radius:100px;padding:8px 16px;font-size:12px;font-weight:700;letter-spacing:-0.24px;
+  color:var(--FgGr99);background:var(--FgGrF1);cursor:pointer;white-space:nowrap;}
+.cv-pilltabs__tab--active{color:var(--FgWh);background:var(--FgGreenOn);}` },
+      { name: 'InitialBadge', source: 'admin/policyParts', category: 'Components', status: 'Draft', scope: '어드민', addedAt: '2026-08-26',
+        desc: '가나다순 목록에서 초성이 바뀌는 첫 항목에만 붙는 인덱스 뱃지.\n글자가 없을 때도 같은 크기의 자리를 지켜, 뒤따르는 이름의 시작 위치가 행마다 흔들리지 않게 한다.\n항목이 많아 이름으로 찾아야 하는 목록에 쓴다.',
+        tags: ['letter', 'placeholderBg'],
+        render: () => (<Flex gap="10px" align="center"><InitialBadge letter="ㄱ" /><InitialBadge letter="ㅅ" /><InitialBadge letter="#" /><InitialBadge /></Flex>),
+        variants: [
+          { title: 'States', desc: '글자 있음 · 자리만 지킴', render: () => (<Flex gap="20px" align="center"><VLabel name="letter"><InitialBadge letter="ㅈ" /></VLabel><VLabel name="empty"><Box bg="#F8F8F8" p="4px"><InitialBadge /></Box></VLabel></Flex>) },
+          { title: '목록 안에서', desc: '초성 그룹의 첫 항목에만', render: () => (<Flex direction="column" gap="8px">{[['ㄱ', '구매후기'], ['', '구매후기 작성 알림'], ['ㄷ', '다중 송장번호 사용'], ['ㄹ', '로그인 유도']].map(([ini, nm]) => (<Flex key={nm} gap="8px" align="center"><InitialBadge letter={ini || undefined} placeholderBg="#FFFFFF" /><Text fontFamily={ADMIN_FONT} fontSize="12px" fontWeight="700" color="#727272">{nm}</Text></Flex>))}</Flex>) },
+        ],
+        props: [
+          { name: 'letter', type: 'string', desc: '초성 한 글자. 없으면 자리만 차지' },
+          { name: 'placeholderBg', type: 'string', def: 'FgGrF8', desc: '글자가 없을 때 배경 — 놓이는 행 배경과 같게 맞춘다' },
+        ],
+        guidelines: {
+          do: ['초성 그룹의 첫 항목에만 글자를 넣는다.', '쌍자음은 홑자음 그룹으로 합친다(ㄲ→ㄱ).'],
+          dont: ['하위 항목에는 붙이지 않는다 — 인덱스 대상이 아니다.', '글자가 없다고 요소를 빼지 않는다 — 이름 시작 위치가 어긋난다.'],
+          note: ['한글로 시작하지 않는 이름은 `#` 그룹으로 묶는다.'],
+        },
+        code: `<InitialBadge letter="ㄱ" />\n<InitialBadge />  {/* 자리만 지킴 */}`,
+        html: `<span class="cv-initial">ㄱ</span>
+<span class="cv-initial cv-initial--empty"></span>`,
+        css: `.cv-initial{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;
+  background:var(--FgGrB8);color:var(--FgWh);font-family:'Nanum Gothic',sans-serif;font-size:12px;font-weight:700;
+  letter-spacing:-0.24px;line-height:1;}
+.cv-initial--empty{background:var(--FgGrF8);}` },
       { name: 'Badge', source: 'admin/atoms · dashboardAtoms', category: 'Components', status: 'Stable', scope: '공통',
         desc: '상태·속성을 색으로 구분해 압축적으로 보여주는 배지.\n방송 진행 상태 표시형과, 상태별 알약형을 제공한다.',
         tags: ['status', 'tone', 'children'],
@@ -806,7 +899,7 @@ const GROUPED: { area: string; items: FlatEntry[] }[] = GROUPS.map((g) => ({
 
 // ── 디자인 토큰 — Figma 변수(get_variable_defs) 이름 그대로 CSS 변수로 ──
 // HTML 스니펫은 색을 하드코딩하지 않고 var(--FgGreenX) 처럼 이 토큰을 참조한다.
-const TOKENS: { name: string; value: string; use: string }[] = [
+const TOKENS: { name: string; value: string; use: string; added?: string }[] = [
   { name: 'FgWh', value: '#FFFFFF', use: '흰색 배경/글자' },
   { name: 'FgGreenX', value: '#29BC25', use: '포인트 초록(등록·활성·강조·마진%)' },
   { name: 'FgRed', value: '#FF2F2F', use: '경고·삭제·취소·감소' },
@@ -817,11 +910,18 @@ const TOKENS: { name: string; value: string; use: string }[] = [
   { name: 'FgGrB8', value: '#B8B8B8', use: '비활성/플레이스홀더/종료' },
   { name: 'FgGrE8', value: '#E8E8E8', use: '테두리/구분선' },
   { name: 'FgGrF8', value: '#F8F8F8', use: '옅은 배경(회색 박스)' },
+  // 2026-08-26 추가 — 디자인관리 기본설정 개편(설정 목록)
+  { name: 'FgGreenOn', value: '#32C243', use: '상태 토글 켜짐 · 알약탭 활성', added: '2026-08-26' },
+  { name: 'FgBlueSel', value: '#0178D4', use: '설정 목록 라디오 선택 테두리', added: '2026-08-26' },
+  { name: 'FgGrF1', value: '#F1F1F1', use: '알약탭 비활성 배경', added: '2026-08-26' },
+  { name: 'FgGr99', value: '#999999', use: '알약탭 비활성 글자', added: '2026-08-26' },
+  { name: 'FgGrAA', value: '#AAAAAA', use: '상태 토글 꺼짐 글자', added: '2026-08-26' },
+  { name: 'FgGrD9', value: '#D9D9D9', use: '설정 행 안 세로 구분 바', added: '2026-08-26' },
 ];
 const TOKEN_ID = 'design-tokens';
 const LAYOUT_ID = 'admin-layout';   // Patterns — 어드민 레이아웃(LayoutDoc)
 // 서비스별 토큰(지금은 FLEXG만 실제 값, 나머지는 준비중). 서비스마다 브랜드 색이 다름.
-const SERVICE_TOKENS: Record<ServiceId, { name: string; value: string; use: string }[]> = {
+const SERVICE_TOKENS: Record<ServiceId, { name: string; value: string; use: string; added?: string }[]> = {
   flexg: TOKENS, juanmoa: [], catchsell: [], page: [],
 };
 const tokenCssFor = (toks: { name: string; value: string }[]) => ':root{\n' + toks.map((t) => `  --${t.name}: ${t.value};`).join('\n') + '\n}';
@@ -1073,7 +1173,16 @@ function TokenPage({ scrollRef, active, goSec, service }: { scrollRef: React.Ref
                 <Box w="26px" h="26px" borderRadius="6px" bg={t.value} border="1px solid #E5E7EB" />
               </Box>
               <Box flex="0 0 180px" px="12px" py="8px" borderLeft="1px solid #F0F1F3">
-                <Text fontFamily="monospace" fontSize="12px" fontWeight="700" color="#111827">--{t.name}</Text>
+                <Flex align="center" gap="5px">
+                  <Text fontFamily="monospace" fontSize="12px" fontWeight="700" color="#111827">--{t.name}</Text>
+                  {t.added && (
+                    <>
+                      <Text as="span" fontFamily={CHROME} fontSize="9.5px" fontWeight="800" letterSpacing="0.04em" color="#fff"
+                        bg={colors.green} borderRadius="4px" px="4px" py="1px" flexShrink={0} lineHeight="1.5">NEW</Text>
+                      <Text as="span" fontFamily="monospace" fontSize="10.5px" color="#A1A1AA" flexShrink={0}>{ymd(t.added)}</Text>
+                    </>
+                  )}
+                </Flex>
               </Box>
               <Box flex="0 0 100px" px="12px" py="8px" borderLeft="1px solid #F0F1F3">
                 <Text fontFamily="monospace" fontSize="12px" color="#6B7280">{t.value}</Text>
@@ -1454,16 +1563,27 @@ export function ComponentGallery() {
   const groups = GROUPED.map((g) => ({ ...g, items: g.items.filter((e) => e.service === service && match(e)) })).filter((g) => g.items.length);
   const svcHasComponents = ALL.some((e) => e.service === service);
   const tokenMatches = !q || 'foundation 디자인 토큰 design tokens'.includes(q);
+  // 신규 토큰이 있으면 좌측 「디자인 토큰」에도 NEW + 가장 최근 추가일을 붙인다
+  const latestTokenAdded = SERVICE_TOKENS[service].map((t) => t.added).filter(Boolean).sort().pop();
   const layoutMatches = service === 'flexg' && (!q || 'patterns 어드민 레이아웃 admin layout'.includes(q));
 
-  const NavRow = ({ id, label, swatch }: { id: string; label: string; swatch?: boolean }) => {
+  const NavRow = ({ id, label, swatch, addedAt }: { id: string; label: string; swatch?: boolean; addedAt?: string }) => {
     const on = id === selectedId;
     return (
       <Flex as="button" w="100%" align="center" gap="8px" pl="14px" pr="10px" py="6px" textAlign="left" borderRadius="7px"
         onClick={() => select(id)} cursor="pointer" position="relative" _hover={{ bg: on ? '#F4F4F5' : '#FAFAFA' }} bg={on ? '#F4F4F5' : 'transparent'}>
         {on && <Box position="absolute" left="-6px" top="6px" bottom="6px" w="3px" borderRadius="2px" bg="#18181B" />}
         {swatch && <Box w="12px" h="12px" borderRadius="3px" flexShrink={0} style={{ background: 'linear-gradient(135deg,#29BC25,#FF2F2F)' }} />}
-        <Text fontFamily={CHROME} fontSize="14.5px" fontWeight={on ? '700' : '500'} color={on ? '#18181B' : '#52525B'} flex="1" minW="0" truncate>{label}</Text>
+        <Flex align="center" gap="5px" flex="1" minW="0">
+          <Text fontFamily={CHROME} fontSize="14.5px" fontWeight={on ? '700' : '500'} color={on ? '#18181B' : '#52525B'} minW="0" truncate>{label}</Text>
+          {addedAt && (
+            <>
+              <Text as="span" fontFamily={CHROME} fontSize="9.5px" fontWeight="800" letterSpacing="0.04em" color="#fff"
+                bg={colors.green} borderRadius="4px" px="4px" py="1px" flexShrink={0} lineHeight="1.5">NEW</Text>
+              <Text as="span" fontFamily="monospace" fontSize="10.5px" color="#A1A1AA" flexShrink={0} lineHeight="1.5">{ymd(addedAt)}</Text>
+            </>
+          )}
+        </Flex>
       </Flex>
     );
   };
@@ -1479,12 +1599,12 @@ export function ComponentGallery() {
           style={{ width: '100%', height: '34px', padding: '0 12px', fontFamily: CHROME, fontSize: '13px', color: '#18181B', background: '#F4F4F5', border: '1px solid #E4E4E7', borderRadius: '8px', boxSizing: 'border-box', outline: 'none' }} />
       </Box>
       <Box flex="1" overflowY="auto" px="6px" pb="24px">
-        {tokenMatches && (<><CatLabel>Foundation</CatLabel><NavRow id={TOKEN_ID} label="디자인 토큰" swatch /></>)}
+        {tokenMatches && (<><CatLabel>Foundation</CatLabel><NavRow id={TOKEN_ID} label="디자인 토큰" swatch addedAt={latestTokenAdded} /></>)}
         {groups.length > 0 && <CatLabel>Components</CatLabel>}
         {groups.map((g) => (
           <Box key={g.area} pb="4px">
             <Text px="14px" pt="8px" pb="3px" fontFamily={CHROME} fontSize="12.5px" fontWeight="700" color="#C4C4CC">{g.area} · {g.items.length}</Text>
-            {g.items.map((e) => <NavRow key={e.id} id={e.id} label={e.name} />)}
+            {g.items.map((e) => <NavRow key={e.id} id={e.id} label={e.name} addedAt={e.addedAt} />)}
           </Box>
         ))}
         {layoutMatches && (<><CatLabel>Patterns</CatLabel><NavRow id={LAYOUT_ID} label="어드민 레이아웃" /></>)}
