@@ -23,9 +23,10 @@ import {
   RAIL_TOP, RAIL_BOTTOM, PANEL_TOGGLES, CUSTOM_PAGES, COLLAPSED_GROUPS, LAYER_TREE,
   ARTBOARDS, ARTBOARD_GAP, SECTION_TITLE, SAMPLE_PRODUCTS, CATEGORY_GROUP, SINGLE_AREA,
   TOOLS, RIGHT_TABS, EMPTY_HINT,
-  ELEMENT_KINDS, DATA_PANEL, DATA_TABS, REPEAT_NONE, REPEAT_SOURCES, REPEAT_PREVIEW_COUNT,
-  INDIVIDUAL_FIELDS, RETURN_PREVIEW, APPLY_REPEAT, APPLY_SINGLE, CONDITION,
-  type RailIcon, type LayerKind, type ToolKind, type ElementKind,
+  ELEMENT_KINDS, DATA_PANEL, REPEAT_NONE, REPEAT_SOURCES, REPEAT_PREVIEW_COUNT,
+  INDIVIDUAL_FIELDS, RETURN_PREVIEW, APPLY_REPEAT, APPLY_SINGLE, DISPLAY_CONDITION,
+  CONDITION_MODAL, COND_CATEGORIES, COND_VARIABLES, COND_COMPARES, COND_VALUES, COND_DEFAULT,
+  type RailIcon, type LayerKind, type ToolKind, type ElementKind, type CondRow,
 } from './pageBuilderData';
 
 /* ────────────────────────────────────────────────────────────
@@ -210,6 +211,44 @@ function IconMinus({ c = PAGE.sub, s = 13 }: { c?: string; s?: number }) {
   return <svg width={s} height={s} viewBox="0 0 12 12" aria-hidden><path d="M1.6 6h8.8" stroke={c} strokeWidth="1.4" strokeLinecap="round" /></svg>;
 }
 
+/** 눈 가림 — 조건을 만족할 때만 보인다는 표시 */
+function IconEyeOff({ c = PAGE.sub }: { c?: string }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden>
+      <path d="M2 8s2.4-4 6-4c.7 0 1.4.2 2 .4M13.3 6.2c.5.7.7 1.2.7 1.2s-2.4 4-6 4c-.7 0-1.3-.1-1.9-.4"
+        fill="none" stroke={c} strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M6.6 6.6a2 2 0 0 0 2.8 2.8" fill="none" stroke={c} strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M2.6 13.4 13.4 2.6" fill="none" stroke={c} strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconX({ c = PAGE.sub }: { c?: string }) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden>
+      <path d="M3.6 3.6 12.4 12.4M12.4 3.6 3.6 12.4" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconPencil({ c = PAGE.faint }: { c?: string }) {
+  return (
+    <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden>
+      <path d="M9.3 2.4 11.6 4.7 5.2 11.1 2.4 11.6l.5-2.8z" fill="none" stroke={c} strokeWidth="1.2"
+        strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconTrash({ c = PAGE.faint }: { c?: string }) {
+  return (
+    <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden>
+      <path d="M2.5 3.7h9M5.5 3.7V2.4h3v1.3M3.7 3.7l.5 8h5.6l.5-8" fill="none" stroke={c} strokeWidth="1.2"
+        strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function IconSort({ c = PAGE.faint }: { c?: string }) {
   return <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden><path d="M2.5 4h9M2.5 7h6M2.5 10h3.5" fill="none" stroke={c} strokeWidth="1.3" strokeLinecap="round" /></svg>;
 }
@@ -316,6 +355,177 @@ function Options({ items, value, onPick }: { items: readonly string[]; value: st
           </Flex>
         );
       })}
+    </Box>
+  );
+}
+
+/** 라벨 붙은 고르는 칸 — 팝업 안에서 쓴다. 목록은 아래로 겹쳐 펼친다 */
+function MiniSelect({
+  label, value, items, onPick, flex = '1',
+}: {
+  label?: string; value: string; items: string[]; onPick: (v: string) => void; flex?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Box position="relative" flex={flex} minW="0">
+      {label && (
+        <Text fontFamily={F} fontSize="11px" color={PAGE.sub} pb="5px">{label}</Text>
+      )}
+      <Picker value={value} onClick={() => setOpen((v) => !v)} />
+      {open && (
+        <Box position="absolute" left="0" right="0" top="100%" zIndex={5}>
+          <Options items={items} value={value} onPick={(v) => { onPick(v); setOpen(false); }} />
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+/** 표시 조건 고치기 팝업 — 연필을 누르면 뜬다 */
+function ConditionModal({
+  onClose, onApply, onRemove,
+}: {
+  onClose: () => void; onApply: () => void; onRemove: () => void;
+}) {
+  const [rows, setRows] = useState<CondRow[]>([COND_DEFAULT]);
+  const set = (i: number, patch: Partial<CondRow>) =>
+    setRows((rs) => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+
+  return (
+    <Flex position="fixed" inset="0" zIndex={50} align="center" justify="center" p="20px"
+      bg="rgba(0,0,0,0.38)" onMouseDown={onClose}>
+      <Flex direction="column" w="min(560px, 94%)" maxH="88%" bg="white" borderRadius="12px"
+        boxShadow="0 20px 60px rgba(0,0,0,0.30)" overflow="hidden"
+        onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}>
+
+        {/* 머리 */}
+        <Flex align="flex-start" justify="space-between" gap="12px" px="22px" pt="20px" pb="16px"
+          borderBottom={'1px solid ' + PAGE.line} flexShrink={0}>
+          <Box minW="0">
+            <Text fontFamily={F} fontWeight="800" fontSize="16px" color={PAGE.ink}>{CONDITION_MODAL.title}</Text>
+            <Text fontFamily={F} fontSize="12px" color={PAGE.sub} pt="4px">{CONDITION_MODAL.desc}</Text>
+          </Box>
+          <Flex as="button" onClick={onClose} w="26px" h="26px" align="center" justify="center"
+            borderRadius="6px" cursor="pointer" flexShrink={0} _hover={{ bg: PAGE.lineSoft }}>
+            <IconX />
+          </Flex>
+        </Flex>
+
+        {/* 본문 */}
+        <Box flex="1" minH="0" overflowY="auto" px="22px" py="18px">
+          {rows.map((r, i) => (
+            <Box key={i} border={'1px solid ' + PAGE.line} borderRadius="10px" p="16px" mb="12px">
+              <Text fontFamily={F} fontSize="11px" color={PAGE.sub} pb="10px">
+                {CONDITION_MODAL.rowLabel} {i + 1}
+              </Text>
+
+              {/* 지금 만든 조건을 문장으로 되짚어 줌 */}
+              <Box bg={PAGE.lineSoft} borderRadius="8px" px="14px" py="12px" mb="14px">
+                <Text fontFamily={F} fontSize="11px" color={PAGE.faint}>
+                  {r.category}.{r.variable}
+                </Text>
+                <Text fontFamily={F} fontWeight="700" fontSize="13px" color={PAGE.ink} pt="4px">
+                  {r.variable} {r.compare} {r.value}
+                </Text>
+              </Box>
+
+              {/* 무엇을 · 어떻게 견줄지 */}
+              <Flex gap="10px" align="flex-start" pb="14px">
+                <MiniSelect label={CONDITION_MODAL.colLabels.category} value={r.category}
+                  items={COND_CATEGORIES} onPick={(v) => set(i, { category: v })} flex="0.85" />
+                <MiniSelect label={CONDITION_MODAL.colLabels.variable} value={r.variable}
+                  items={COND_VARIABLES} onPick={(v) => set(i, { variable: v })} flex="1.4" />
+                <MiniSelect label={CONDITION_MODAL.colLabels.compare} value={r.compare}
+                  items={COND_COMPARES} onPick={(v) => set(i, { compare: v })} flex="1" />
+              </Flex>
+
+              {/* 견줄 값 */}
+              <Box border={'1px solid ' + PAGE.line} borderRadius="8px" p="12px">
+                <Flex align="center" justify="space-between" gap="10px" pb="9px">
+                  <Text fontFamily={F} fontSize="11px" color={PAGE.sub}>{CONDITION_MODAL.valueLabel}</Text>
+                  <Flex bg={PAGE.lineSoft} borderRadius="7px" p="3px" gap="2px" flexShrink={0}>
+                    {CONDITION_MODAL.valueModes.map((m) => {
+                      const on = m === r.mode;
+                      return (
+                        <Flex as="button" key={m} onClick={() => set(i, { mode: m })} px="12px" py="5px"
+                          borderRadius="5px" cursor="pointer" bg={on ? 'white' : 'transparent'}
+                          boxShadow={on ? '0 1px 2px rgba(0,0,0,0.12)' : undefined}>
+                          <Text fontFamily={F} fontWeight={on ? '700' : '500'} fontSize="11px"
+                            color={on ? PAGE.ink : PAGE.sub} whiteSpace="nowrap">{m}</Text>
+                        </Flex>
+                      );
+                    })}
+                  </Flex>
+                </Flex>
+                <MiniSelect value={r.value}
+                  items={r.mode === CONDITION_MODAL.valueModes[0] ? COND_VALUES : COND_VARIABLES}
+                  onPick={(v) => set(i, { value: v })} />
+              </Box>
+            </Box>
+          ))}
+
+          {/* 줄 더하기 — 여러 줄이면 모두 만족해야 함 */}
+          <Flex as="button" onClick={() => setRows((rs) => [...rs, { ...COND_DEFAULT }])}
+            w="100%" align="center" justify="center" gap="6px" py="13px" borderRadius="9px"
+            bg={PAGE.lineSoft} cursor="pointer" _hover={{ bg: '#E9EAEC' }}>
+            <IconPlus c={PAGE.sub} s={11} />
+            <Text fontFamily={F} fontSize="12px" color={PAGE.sub}>{CONDITION_MODAL.addLabel}</Text>
+          </Flex>
+        </Box>
+
+        {/* 발 */}
+        <Flex align="center" justify="space-between" gap="12px" px="22px" py="14px"
+          borderTop={'1px solid ' + PAGE.line} flexShrink={0}>
+          <Flex as="button" onClick={onRemove} px="14px" py="9px" borderRadius="7px" bg="#DC2626"
+            cursor="pointer" _hover={{ bg: '#B91C1C' }}>
+            <Text fontFamily={F} fontWeight="700" fontSize="12px" color="white">{CONDITION_MODAL.removeLabel}</Text>
+          </Flex>
+          <Flex align="center" gap="12px">
+            <Flex as="button" onClick={onClose} px="8px" py="9px" cursor="pointer">
+              <Text fontFamily={F} fontSize="12px" color={PAGE.sub}>{CONDITION_MODAL.cancelLabel}</Text>
+            </Flex>
+            <Flex as="button" onClick={onApply} px="18px" py="9px" borderRadius="7px" bg={PAGE.publish}
+              cursor="pointer" _hover={{ bg: '#3C4BD8' }}>
+              <Text fontFamily={F} fontWeight="700" fontSize="12px" color="white">{CONDITION_MODAL.applyLabel}</Text>
+            </Flex>
+          </Flex>
+        </Flex>
+      </Flex>
+    </Flex>
+  );
+}
+
+/** 표시 조건 — 반복·개별 데이터 각각의 하위 영역.
+ *  조건이 없으면 더하기 링크만, 걸려 있으면 조건 줄과 몇 개에서 보이는지를 보인다. */
+function ConditionArea({
+  rule, count, onOpen, onRemove, mark,
+}: {
+  rule: string | null; count: string; onOpen: () => void; onRemove: () => void; mark?: string;
+}) {
+  return (
+    <Box data-doc-mark={mark} mt="10px" pt="10px" borderTop={'1px solid ' + PAGE.line}>
+      {rule ? (
+        <>
+          <Flex align="center" gap="6px">
+            <Box flexShrink={0}><IconEyeOff /></Box>
+            <Text fontFamily={F} fontSize="11px" color={PAGE.body} flex="1" minW="0"
+              whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">{rule}</Text>
+            <Flex as="button" w="20px" h="20px" align="center" justify="center" borderRadius="4px"
+              cursor="pointer" flexShrink={0} title={DISPLAY_CONDITION.editLabel} onClick={onOpen}
+              _hover={{ bg: PAGE.lineSoft }}><IconPencil /></Flex>
+            <Flex as="button" w="20px" h="20px" align="center" justify="center" borderRadius="4px"
+              cursor="pointer" flexShrink={0} title={DISPLAY_CONDITION.removeLabel} onClick={onRemove}
+              _hover={{ bg: PAGE.lineSoft }}><IconTrash /></Flex>
+          </Flex>
+          <Text fontFamily={F} fontSize="10px" color={PAGE.faint} pt="3px" pl="20px">{count}</Text>
+        </>
+      ) : (
+        <Flex as="button" onClick={onOpen} align="center" gap="5px" cursor="pointer" w="max-content"
+          _hover={{ '& p': { color: PAGE.body } }}>
+          <IconPlus c={PAGE.faint} s={11} />
+          <Text fontFamily={F} fontSize="11px" color={PAGE.faint}>{DISPLAY_CONDITION.addLabel}</Text>
+        </Flex>
+      )}
     </Box>
   );
 }
@@ -471,7 +681,11 @@ function ArtboardBody({ w, picked, onPick, marked = false }: { w: number; picked
  * ──────────────────────────────────────────────────────────── */
 
 function DataTab({ picked, onPick }: { picked: ElementKind | null; onPick: (k: ElementKind | null) => void }) {
-  const [inner, setInner] = useState<string>(DATA_TABS[0]);
+  // 표시 조건 — 반복·개별 각각 따로 건다
+  const [repeatCond, setRepeatCond] = useState(false);
+  const [singleCond, setSingleCond] = useState(true); // 참고 이미지의 「조건 있음」 상태를 기본으로 보임
+  // 고치기(연필)로 연 조건 팝업 — 어느 쪽 조건을 고치는 중인지
+  const [editing, setEditing] = useState<'repeat' | 'single' | null>(null);
   const [repeat, setRepeat] = useState<string>(REPEAT_NONE);
   const [openRepeat, setOpenRepeat] = useState(false);
   const [field, setField] = useState<string | null>(null);
@@ -498,22 +712,10 @@ function DataTab({ picked, onPick }: { picked: ElementKind | null; onPick: (k: E
       {/* ① 선택 요소 */}
       <Box data-doc-mark="data-step1" px="16px" py="14px" borderBottom={'1px solid ' + PAGE.line}>
         <StepTitle n={1} label="선택 요소" />
-        {meta ? (
-          <Flex data-doc-mark="data-current" align="center" gap="9px" bg={PAGE.accentSoft}
-            border={'1px solid ' + PAGE.accentLine} borderRadius="7px" p="10px">
-            <KindGlyph kind={meta.kind} c={PAGE.accentDeep} s={16} />
-            <Box flex="1" minW="0">
-              <Text fontFamily={F} fontSize="10px" color="#8580C4">{DATA_PANEL.pickedCaption}</Text>
-              <Text fontFamily={F} fontWeight="700" fontSize="12px" color={PAGE.accentDeep}>{meta.name}</Text>
-            </Box>
-            <IconCheck />
-          </Flex>
-        ) : (
-          <Waiting text={DATA_PANEL.waitingElement} />
-        )}
+        {!meta && <Waiting text={DATA_PANEL.waitingElement} />}
 
-        {/* 요소 목록 — 작업 창에서 고르는 대신 여기서도 고를 수 있다 */}
-        <Box data-doc-mark="data-elements" pt="9px">
+        {/* 요소 목록 — 고른 것 하나만 체크로 표시. 작업 창에서 고르든 여기서 고르든 같다 */}
+        <Box data-doc-mark="data-elements" pt={meta ? '0' : '9px'}>
           {ELEMENT_KINDS.map((e) => {
             const on = e.kind === picked;
             return (
@@ -543,23 +745,7 @@ function DataTab({ picked, onPick }: { picked: ElementKind | null; onPick: (k: E
           <Waiting text={DATA_PANEL.waitingData} />
         ) : (
           <>
-            {/* 안쪽 탭 */}
-            <Flex data-doc-mark="data-tabs" gap="3px" borderBottom={'1px solid ' + PAGE.line} mx="-16px" px="16px" mb="13px">
-              {DATA_TABS.map((t) => {
-                const on = t === inner;
-                return (
-                  <Flex as="button" key={t} onClick={() => setInner(t)} px="8px" pb="9px" cursor="pointer"
-                    borderBottom={'2px solid ' + (on ? PAGE.accent : 'transparent')} mb="-1px">
-                    <Text fontFamily={F} fontWeight={on ? '800' : '500'} fontSize="11px"
-                      color={on ? PAGE.accentDeep : PAGE.faint} whiteSpace="nowrap">{t}</Text>
-                  </Flex>
-                );
-              })}
-            </Flex>
-
-            {inner === DATA_TABS[0] ? (
-              <>
-                {/* 반복 데이터 — 선택 사항 */}
+              {/* 반복 데이터 — 선택 사항 */}
                 <Box data-doc-mark="data-repeat">
                   <Flex align="center" gap="4px" pb="7px">
                     <Text fontFamily={F} fontSize="11px" color={PAGE.sub}>반복 데이터 선택</Text>
@@ -591,6 +777,12 @@ function DataTab({ picked, onPick }: { picked: ElementKind | null; onPick: (k: E
                       ))}
                     </Box>
                     <ApplyBtn label={APPLY_REPEAT} />
+                    <ConditionArea
+                      rule={repeatCond ? DISPLAY_CONDITION.repeat.rule : null}
+                      count={DISPLAY_CONDITION.repeat.count}
+                      onOpen={() => setEditing('repeat')}
+                      onRemove={() => setRepeatCond(false)}
+                    />
                   </Box>
                 )}
 
@@ -619,26 +811,37 @@ function DataTab({ picked, onPick }: { picked: ElementKind | null; onPick: (k: E
                         </Box>
                       )}
                       <ApplyBtn label={APPLY_SINGLE} />
+                      <ConditionArea
+                        mark="data-condition"
+                        rule={singleCond ? DISPLAY_CONDITION.single.rule : null}
+                        count={DISPLAY_CONDITION.single.count}
+                        onOpen={() => setEditing('single')}
+                        onRemove={() => setSingleCond(false)}
+                      />
                     </Box>
                   )}
                 </Box>
-              </>
-            ) : (
-              /* 조건부 설정 */
-              <Box data-doc-mark="data-condition" border={'1px solid ' + PAGE.line} borderRadius="8px" p="12px">
-                <Text fontFamily={F} fontWeight="700" fontSize="12px" color={PAGE.ink}>{CONDITION.title}</Text>
-                <Text fontFamily={F} fontSize="11px" color={PAGE.sub} lineHeight="1.5" py="8px">{CONDITION.body}</Text>
-                <Flex as="button" align="center" gap="4px" px="10px" py="7px" borderRadius="6px"
-                  border={'1px solid ' + PAGE.line} bg="white" cursor="pointer" w="max-content"
-                  _hover={{ bg: PAGE.lineSoft }}>
-                  <IconPlus c={PAGE.body} s={11} />
-                  <Text fontFamily={F} fontSize="11px" color={PAGE.body}>{CONDITION.addLabel}</Text>
-                </Flex>
-              </Box>
-            )}
           </>
         )}
       </Box>
+
+      {/* 표시 조건 고치기 팝업 */}
+      {editing && (
+        <ConditionModal
+          onClose={() => setEditing(null)}
+          onApply={() => {
+            // 새로 거는 경우든 고치는 경우든, 적용을 눌러야 조건이 반영된다
+            if (editing === 'repeat') setRepeatCond(true);
+            else setSingleCond(true);
+            setEditing(null);
+          }}
+          onRemove={() => {
+            if (editing === 'repeat') setRepeatCond(false);
+            else setSingleCond(false);
+            setEditing(null);
+          }}
+        />
+      )}
     </>
   );
 }

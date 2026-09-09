@@ -171,11 +171,25 @@ export const DATA_PANEL = {
     '선택 후 해당 요소에 맞는 연결 방식과 데이터만 표시됩니다.',
   /** ② 단계 — 아직 아무것도 안 골랐을 때 */
   waitingData: '요소를 선택하면 데이터 설정이 나타납니다.',
-  pickedCaption: '작업 창에서 선택됨',
 };
 
-/** ② 단계 안쪽 탭 */
-export const DATA_TABS = ['데이터 연결', '조건부 설정'] as const;
+/** 표시 조건 — 반복 데이터와 개별 데이터 각각의 하위 영역.
+ *  탭으로 가르지 않고 그 데이터를 고르는 자리 바로 아래에 붙인다. */
+export const DISPLAY_CONDITION = {
+  addLabel: '표시 조건',
+  editLabel: '조건 고치기',
+  removeLabel: '조건 지우기',
+  /** 반복 데이터에 건 조건 — 찍어 낼 것을 걸러 냄 */
+  repeat: {
+    rule: '품절이 아닐 때만 표시',
+    count: '128개 중 112개에서 표시',
+  },
+  /** 개별 데이터에 건 조건 — 그 자리를 보일지 말지 */
+  single: {
+    rule: '재고 ≤ 1일 때만 표시',
+    count: '4개 중 1개에서 표시',
+  },
+};
 
 /** 반복 데이터 — 고르지 않아도 됨(선택 사항) */
 export const REPEAT_NONE = '반복 데이터 사용 안 함';
@@ -213,9 +227,40 @@ export const RETURN_PREVIEW: Record<ElementKind, ReturnPreview> = {
 export const APPLY_REPEAT = '반복 데이터 적용';
 export const APPLY_SINGLE = '개별 데이터 적용';
 
-/** 조건부 설정 탭 */
-export const CONDITION = {
-  title: '조건부 스타일',
-  body: '배송비 라벨, 품절 표시처럼 조건을 만족할 때만 별도 스타일을 적용합니다. 일반 바인딩에는 필수가 아닙니다.',
+/** 표시 조건의 고치기(연필)를 누르면 뜨는 팝업 */
+export const CONDITION_MODAL = {
+  title: '활성 조건 설정',
+  desc: '조건이 만족될 때 이 레이어의 활성 디자인 상태가 적용됩니다.',
+  rowLabel: '조건',
   addLabel: '조건 추가',
+  removeLabel: '조건 삭제',
+  cancelLabel: '취소',
+  applyLabel: '적용',
+  valueLabel: '값',
+  colLabels: { category: '카테고리', variable: '변수', compare: '비교' },
+  /** 값을 어떻게 줄지 — 직접 적을지, 다른 항목에서 가져올지 */
+  valueModes: ['직접 값', '필드'] as const,
+};
+
+/** 조건 한 줄에서 고르는 값들 */
+export const COND_CATEGORIES = ['상품', '카테고리', '회원', '주문'];
+export const COND_VARIABLES = ['할인 표기', '품절 여부', '재고 수량', '판매가', '등록일'];
+export const COND_COMPARES = ['같음 (=)', '같지 않음 (≠)', '보다 큼 (>)', '보다 작음 (<)', '비어 있음'];
+export const COND_VALUES = ['표기 함', '표기 안 함'];
+
+/** 조건 한 줄 */
+export interface CondRow {
+  category: string;
+  variable: string;
+  compare: string;
+  mode: string;
+  value: string;
+}
+
+export const COND_DEFAULT: CondRow = {
+  category: COND_CATEGORIES[0],
+  variable: COND_VARIABLES[0],
+  compare: COND_COMPARES[0],
+  mode: CONDITION_MODAL.valueModes[0],
+  value: COND_VALUES[0],
 };
