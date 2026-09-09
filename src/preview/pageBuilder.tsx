@@ -24,7 +24,7 @@ import {
   ARTBOARDS, ARTBOARD_GAP, SECTION_TITLE, SAMPLE_PRODUCTS, CATEGORY_GROUP, SINGLE_AREA,
   TOOLS, RIGHT_TABS, EMPTY_HINT,
   ELEMENT_KINDS, DATA_PANEL, REPEAT_NONE, REPEAT_SOURCES, REPEAT_PREVIEW_COUNT,
-  INDIVIDUAL_FIELDS, RETURN_PREVIEW, APPLY_REPEAT, APPLY_SINGLE, DISPLAY_CONDITION,
+  INDIVIDUAL_FIELDS, RETURN_PREVIEW, APPLY_REPEAT, APPLY_SINGLE, DISPLAY_CONDITION, LOCK_NOTE,
   CONDITION_MODAL, COND_CATEGORIES, COND_VARIABLES, COND_COMPARES, COND_VALUES, COND_DEFAULT,
   type RailIcon, type LayerKind, type ToolKind, type ElementKind, type CondRow,
 } from './pageBuilderData';
@@ -325,16 +325,32 @@ function PanelTitle({ title, right }: { title: string; right?: React.ReactNode }
   );
 }
 
-/** 고르는 칸 — 데이터 탭이 값을 고를 때 쓴다 */
-function Picker({ value, onClick, muted = false }: { value: string; onClick?: () => void; muted?: boolean }) {
+/** 고르는 칸 — 데이터 탭이 값을 고를 때 쓴다. disabled 면 눌리지 않고 옅게 보인다 */
+function Picker({
+  value, onClick, muted = false, disabled = false,
+}: {
+  value: string; onClick?: () => void; muted?: boolean; disabled?: boolean;
+}) {
   return (
-    <Flex as="button" onClick={onClick} align="center" justify="space-between" gap="6px" w="100%"
-      h="34px" px="9px" border={'1px solid ' + PAGE.line} borderRadius="7px" bg="white" cursor="pointer" minW="0"
-      _hover={{ borderColor: PAGE.accent }}>
-      <Text fontFamily={F} fontSize="12px" color={muted ? PAGE.faint : PAGE.ink}
+    <Flex as="button" onClick={disabled ? undefined : onClick} align="center" justify="space-between" gap="6px"
+      w="100%" h="34px" px="9px" borderRadius="7px" minW="0"
+      border={'1px solid ' + (disabled ? PAGE.line : PAGE.line)}
+      bg={disabled ? PAGE.lineSoft : 'white'}
+      cursor={disabled ? 'not-allowed' : 'pointer'}
+      _hover={disabled ? undefined : { borderColor: PAGE.accent }}>
+      <Text fontFamily={F} fontSize="12px" color={disabled || muted ? PAGE.faint : PAGE.ink}
         whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">{value}</Text>
-      <Box flexShrink={0} transform="rotate(90deg)"><Chevron open={false} c={PAGE.faint} /></Box>
+      <Box flexShrink={0} transform="rotate(90deg)" opacity={disabled ? 0.4 : 1}>
+        <Chevron open={false} c={PAGE.faint} />
+      </Box>
     </Flex>
+  );
+}
+
+/** 왜 지금 고를 수 없는지 — 비활성 칸 아래 한 줄 */
+function LockNote({ text }: { text: string }) {
+  return (
+    <Text fontFamily={F} fontSize="11px" color={PAGE.faint} pt="6px" lineHeight="1.4">{text}</Text>
   );
 }
 
@@ -694,10 +710,17 @@ function DataTab({ picked, onPick }: { picked: ElementKind | null; onPick: (k: E
   const meta = ELEMENT_KINDS.find((e) => e.kind === picked) ?? null;
   const fields = picked ? INDIVIDUAL_FIELDS[picked] : [];
   const preview = picked ? RETURN_PREVIEW[picked] : null;
-  const usingRepeat = repeat !== REPEAT_NONE;
+  // 그룹(반복 목록)이냐 낱개 요소냐에 따라 한쪽을 잠근다
+  const isGroup = meta?.repeat === true;
+  const usingRepeat = isGroup && repeat !== REPEAT_NONE;
 
-  // 요소를 바꾸면 고른 개별 항목은 초기화한다 — 성격마다 고를 수 있는 것이 달라서
-  useEffect(() => { setField(null); setOpenField(false); }, [picked]);
+  // 요소를 바꾸면 고른 값은 초기화한다 — 성격마다 고를 수 있는 것이 달라서
+  useEffect(() => {
+    setField(null);
+    setOpenField(false);
+    setRepeat(REPEAT_NONE); // 낱개로 옮겨 가면 앞서 걸어 둔 반복이 남지 않게
+    setOpenRepeat(false);
+  }, [picked]);
 
   return (
     <>
@@ -751,11 +774,13 @@ function DataTab({ picked, onPick }: { picked: ElementKind | null; onPick: (k: E
                     <Text fontFamily={F} fontSize="11px" color={PAGE.sub}>반복 데이터 선택</Text>
                     <Text fontFamily={F} fontSize="11px" color={PAGE.faint}>(선택 사항)</Text>
                   </Flex>
-                  <Picker value={repeat} muted={!usingRepeat} onClick={() => setOpenRepeat((v) => !v)} />
-                  {openRepeat && (
+                  <Picker value={repeat} muted={!usingRepeat} disabled={!isGroup}
+                    onClick={() => setOpenRepeat((v) => !v)} />
+                  {openRepeat && isGroup && (
                     <Options items={REPEAT_SOURCES} value={repeat}
                       onPick={(v) => { setRepeat(v); setOpenRepeat(false); }} />
                   )}
+                  {!isGroup && <LockNote text={LOCK_NOTE.repeat} />}
                 </Box>
 
                 {/* 반복을 고르면 무엇이 몇 개 찍히는지 */}
@@ -789,16 +814,19 @@ function DataTab({ picked, onPick }: { picked: ElementKind | null; onPick: (k: E
                 {/* 개별 데이터 */}
                 <Box data-doc-mark="data-single" borderTop={'1px solid ' + PAGE.line} mt="14px" pt="13px">
                   <Text fontFamily={F} fontWeight="700" fontSize="12px" color={PAGE.ink} pb="8px">개별 데이터 선택</Text>
-                  <Picker value={field ?? fields[0]} muted={!field} onClick={() => setOpenField((v) => !v)} />
-                  {openField && (
+                  <Picker value={field ?? fields[0]} muted={!field} disabled={isGroup}
+                    onClick={() => setOpenField((v) => !v)} />
+                  {openField && !isGroup && (
                     <Options items={fields} value={field ?? fields[0]}
                       onPick={(v) => { setField(v); setOpenField(false); }} />
                   )}
+                  {isGroup && <LockNote text={LOCK_NOTE.single} />}
 
                   {/* 무슨 값이 들어가는지 */}
                   {preview && (
                     <Box data-doc-mark="data-single-preview" mt="8px" border={'1px solid ' + PAGE.accentLine}
-                      bg="#FBFAFF" borderRadius="7px" p="9px">
+                      bg="#FBFAFF" borderRadius="7px" p="9px"
+                      opacity={isGroup ? 0.45 : 1} pointerEvents={isGroup ? 'none' : undefined}>
                       <Text fontFamily={F} fontSize="10px" color="#77719A" pb="7px">개별 필드 반환값</Text>
                       {preview.shape === 'image' ? (
                         <Flex h="72px" borderRadius="6px" bg="#DED5C6" align="center" justify="center">

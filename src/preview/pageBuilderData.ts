@@ -204,6 +204,14 @@ export const REPEAT_SOURCES = [
 /** 반복 데이터를 고르면 나오는 미리보기 카드 수 */
 export const REPEAT_PREVIEW_COUNT = 3;
 
+/** 고른 요소 성격에 따라 한쪽을 잠글 때 붙이는 안내 */
+export const LOCK_NOTE = {
+  /** 낱개 요소를 골랐을 때 — 반복 쪽을 잠금 */
+  repeat: '낱개 요소라 반복을 걸 수 없음. 반복은 그룹을 골랐을 때만 정함',
+  /** 그룹을 골랐을 때 — 개별 쪽을 잠금 */
+  single: '그룹이라 값 하나를 정하지 않음. 안에 든 자리마다 따로 이음',
+};
+
 /** 요소 성격별로 고를 수 있는 개별 데이터 */
 export const INDIVIDUAL_FIELDS: Record<ElementKind, string[]> = {
   image: ['상품 대표 이미지', '상품 썸네일', '카테고리 이미지'],
