@@ -54,7 +54,6 @@ const IconSun = ({ s = 16, c = 'currentColor' }) => (<svg width={s} height={s} v
 const IconMoon = ({ s = 16, c = 'currentColor' }) => (<svg width={s} height={s} viewBox="0 0 24 24" {...IC} stroke={c}><path d="M20 14.5A7.5 7.5 0 0 1 9.5 4a7.5 7.5 0 1 0 10.5 10.5Z" /></svg>);
 const IconComment = ({ s = 16, c = 'currentColor' }) => (<svg width={s} height={s} viewBox="0 0 24 24" {...IC} stroke={c}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z" /></svg>);
 const IconList = ({ s = 16, c = 'currentColor' }) => (<svg width={s} height={s} viewBox="0 0 24 24" {...IC} stroke={c}><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg>);
-const IconGrid = ({ s = 16, c = 'currentColor' }) => (<svg width={s} height={s} viewBox="0 0 24 24" {...IC} stroke={c}><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg>);
 const IconPanel = ({ s = 16, c = 'currentColor' }) => (<svg width={s} height={s} viewBox="0 0 24 24" {...IC} stroke={c}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M15 4v16" /></svg>);
 const IconClose = ({ s = 16, c = 'currentColor' }) => (<svg width={s} height={s} viewBox="0 0 24 24" {...IC} stroke={c} strokeWidth={2}><path d="M6 6l12 12M18 6 6 18" /></svg>);
 const IconCheck = ({ s = 14, c = 'currentColor' }) => (<svg width={s} height={s} viewBox="0 0 24 24" {...IC} stroke={c} strokeWidth={2.4}><path d="M5 12l5 5L20 6" /></svg>);
@@ -236,16 +235,8 @@ export function DocsShell() {
             <Text fontSize="17px" fontWeight="800" color={t.text} flex="1">{DOC_TITLE}</Text>
             <IconBtn t={t} title="문서 영역 접기" onClick={() => setNavCollapsed(true)}><IconMenu c={t.textSub} /></IconBtn>
           </Flex>
-          {/* 컴포넌트 바로가기 — 타이틀 아래 작은 링크 */}
-          <Box px="16px" pb="12px">
-            <Flex as="button" align="center" gap="5px" onClick={() => window.open('/components', '_blank', 'noopener')} cursor="pointer" title="주요 컴포넌트 카탈로그를 새 창으로 열기"
-              _hover={{ '& svg': { stroke: t.text }, '& p': { color: t.text } }}>
-              <IconGrid s={12} c={t.textMuted} />
-              <Text fontSize="11.5px" fontWeight="700" color={t.textMuted}>컴포넌트 바로가기 ↗</Text>
-            </Flex>
-          </Box>
           {/* 검색 */}
-          <Box px="16px" pb="12px">
+          <Box px="16px" pt="12px" pb="12px">
             <Flex align="center" gap="8px" bg={t.searchBg} border={`1px solid ${t.borderSoft}`} borderRadius="9px" px="10px" h="36px">
               <IconSearch c={t.textMuted} />
               <input
@@ -401,8 +392,9 @@ export function DocsShell() {
               }}
             />
 
-            {/* 번호 마커 오버레이 — 요소 왼쪽 위 모서리에 앵커. 설명 패널을 닫으면(descCollapsed) 마커도 숨김 */}
-            {!commentPlace && !descCollapsed && marks.map((m) => (
+            {/* 번호 마커 오버레이 — 요소 왼쪽 위 모서리에 앵커. 설명 패널을 닫으면(descCollapsed) 마커도 숨김.
+                entry.hideMarks 면 화면 위 마커만 끈다(번호 계산·설명 패널 번호는 그대로). */}
+            {!commentPlace && !descCollapsed && !entry.hideMarks && marks.map((m) => (
               <Flex key={m.mark} position="absolute" left={`${m.x}px`} top={`${m.y}px`} transform="translate(-50%, -50%)"
                 align="center" justify="center" w="22px" h="22px" borderRadius="50%" bg={MARK_COLOR}
                 border="2px solid #fff" boxShadow="0 1px 5px rgba(0,0,0,0.35)" pointerEvents="none"

@@ -6,6 +6,7 @@
 import { Box, Text } from '@chakra-ui/react';
 import { Overview } from './overview';
 import { BasicSettings } from './basicSettings';
+import { PageBuilder } from './pageBuilder';
 
 export function DemoScreen() {
   const path = window.location.pathname.replace(/^\/preview\//, '');
@@ -14,6 +15,8 @@ export function DemoScreen() {
       return <Overview />;
     case 'basic-settings':
       return <BasicSettings />;
+    case 'page-builder':
+      return <PageBuilder />;
     default:
       return (
         <Box minH="100dvh" bg="#F7F8FA" p="28px" fontFamily="'Pretendard', system-ui, sans-serif">
