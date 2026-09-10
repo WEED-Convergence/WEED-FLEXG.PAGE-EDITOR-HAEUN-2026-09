@@ -1,10 +1,10 @@
 {
-  "name": "flexg-admin-design-basic-settings",
+  "name": "flexg-page-builder-data-binding",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "FLEXG 어드민 · 디자인관리 > 기본설정(쇼핑몰 정책 및 기능) UI/UX 개편 기획 문서",
-  "author": "김희연",
+  "description": "FLEXG PAGE · 페이지 빌더 > 데이터 바인딩 영역 화면설계 기획 문서",
+  "author": "김하은",
   "//": "docs 시스템 개발 : 김희연 / 2026.06.01",
   "scripts": {
     "dev": "vite",
