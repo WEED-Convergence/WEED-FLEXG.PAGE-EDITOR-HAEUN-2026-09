@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="1080" viewBox="0 0 1160 1080" font-family="Pretendard, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9AA0A6"/>
+    </marker>
+    <style>
+      .bx   { rx:10; ry:10; stroke-width:1.4; }
+      .t    { font-size:15px; font-weight:700; text-anchor:middle; }
+      .s    { font-size:11.5px; text-anchor:middle; }
+      .lane { font-size:12.5px; font-weight:700; text-anchor:middle; fill:#6B7280; }
+      .ln   { stroke:#9AA0A6; stroke-width:1.4; fill:none; }
+      .yn   { font-size:12.5px; font-weight:800; text-anchor:middle; fill:#5B5F66; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1160" height="1080" rx="14" fill="#F7F7FA"/>
+
+  <text x="44" y="52" font-size="22" font-weight="800" fill="#1F2328">개선 흐름 (TO-BE)</text>
+  <text x="44" y="76" font-size="13" fill="#6B7280">이번 개선안으로 만들 흐름</text>
+
+  <!-- 시작 -->
+  <rect class="bx" x="460" y="104" width="240" height="48" fill="#ECECEF" stroke="#C9C9CF"/>
+  <text class="t" x="580" y="134" fill="#3A3A40">캔버스에서 요소 선택</text>
+
+  <!-- 요소 타입 분기 -->
+  <path class="ln" d="M580 152 L580 180 M300 180 L860 180 M860 180 L860 216" marker-end="url(#ah)"/>
+  <text class="lane" x="300" y="203">낱개 요소 · 이미지 · 텍스트 · 링크</text>
+  <text class="lane" x="860" y="203">컨테이너 · 그룹</text>
+
+  <!-- 오른쪽: 반복 경로 -->
+  <rect class="bx" x="720" y="220" width="280" height="64" fill="#E3F5F0" stroke="#9ED8C8"/>
+  <text class="t" x="860" y="246" fill="#23705F">① 반복 데이터 소스 선택</text>
+  <text class="s" x="860" y="266" fill="#4E8B7C">상품 목록 · 카테고리 · API</text>
+
+  <path class="ln" d="M860 284 L860 322" marker-end="url(#ah)"/>
+
+  <rect class="bx" x="720" y="326" width="280" height="52" fill="#E3F5F0" stroke="#9ED8C8"/>
+  <text class="t" x="860" y="358" fill="#23705F">② 반복 적용</text>
+
+  <path class="ln" d="M860 378 L860 416" marker-end="url(#ah)"/>
+
+  <rect class="bx" x="720" y="420" width="280" height="64" fill="#E3F5F0" stroke="#9ED8C8"/>
+  <text class="t" x="860" y="446" fill="#23705F">③ 그룹 내 낱개 요소 선택</text>
+  <text class="s" x="860" y="466" fill="#4E8B7C">여기서 아래 경로로 이어짐</text>
+
+  <!-- 왼쪽 낱개 경로는 곧장 아래로 -->
+  <path class="ln" d="M300 216 L300 520"/>
+  <path class="ln" d="M860 484 L860 520"/>
+  <path class="ln" d="M300 520 L860 520 M580 520 L580 552" marker-end="url(#ah)"/>
+
+  <!-- 분기: 상위 반복 여부 -->
+  <polygon points="580,556 726,606 580,656 434,606" fill="#F1EFF7" stroke="#C3BBDA" stroke-width="1.4"/>
+  <text class="t" x="580" y="601" fill="#4A4160">상위 반복이</text>
+  <text class="t" x="580" y="621" fill="#4A4160">있는가</text>
+
+  <path class="ln" d="M580 656 L580 686 M400 686 L760 686 M400 686 L400 722" marker-end="url(#ah)"/>
+  <path class="ln" d="M760 686 L760 722" marker-end="url(#ah)"/>
+  <text class="yn" x="490" y="678">있음</text>
+  <text class="yn" x="672" y="678">없음</text>
+
+  <!-- 개별 바인딩 -->
+  <rect class="bx" x="260" y="726" width="280" height="68" fill="#EDEBFF" stroke="#B9B2F5"/>
+  <text class="t" x="400" y="754" fill="#4A42A8">개별 바인딩</text>
+  <text class="s" x="400" y="776" fill="#6D64BE">상위 소스의 하위 항목만 노출</text>
+
+  <!-- 변수 바인딩 -->
+  <rect class="bx" x="620" y="726" width="280" height="68" fill="#F3EEFB" stroke="#CDBCE8"/>
+  <text class="t" x="760" y="754" fill="#6B3FA0">변수 바인딩</text>
+  <text class="s" x="760" y="776" fill="#8B67B8">독립 항목 전체 목록 노출</text>
+
+  <path class="ln" d="M400 794 L400 830" marker-end="url(#ah)"/>
+  <path class="ln" d="M760 794 L760 830" marker-end="url(#ah)"/>
+
+  <rect class="bx" x="260" y="834" width="280" height="64" fill="#FFFFFF" stroke="#D8D5E8"/>
+  <text class="t" x="400" y="860" fill="#4A4160">필드 선택</text>
+  <text class="s" x="400" y="880" fill="#8A86A0">미리보기로 값 확인</text>
+
+  <rect class="bx" x="620" y="834" width="280" height="64" fill="#FFFFFF" stroke="#D8D5E8"/>
+  <text class="t" x="760" y="860" fill="#4A4160">필드 선택</text>
+  <text class="s" x="760" y="880" fill="#8A86A0">미리보기로 값 확인</text>
+
+  <!-- 합류 -->
+  <path class="ln" d="M400 898 L400 926 M400 926 L760 926 M760 898 L760 926 M580 926 L580 954" marker-end="url(#ah)"/>
+
+  <rect class="bx" x="440" y="958" width="280" height="48" fill="#ECECEF" stroke="#C9C9CF"/>
+  <text class="t" x="580" y="988" fill="#3A3A40">바인딩 적용</text>
+
+  <path class="ln" d="M580 1006 L580 1024" marker-end="url(#ah)"/>
+
+  <rect class="bx" x="410" y="1028" width="340" height="36" fill="#FDF1E3" stroke="#F0C79A"/>
+  <text x="580" y="1052" font-size="14" font-weight="700" text-anchor="middle" fill="#9A5E1C">조건부 설정 · 선택 사항</text>
+
+  <!-- 범례 -->
+  <rect x="744" y="44" width="14" height="14" rx="4" fill="#E3F5F0" stroke="#9ED8C8"/>
+  <text x="766" y="56" font-size="12" fill="#6B7280">반복 경로</text>
+  <rect x="844" y="44" width="14" height="14" rx="4" fill="#EDEBFF" stroke="#B9B2F5"/>
+  <text x="866" y="56" font-size="12" fill="#6B7280">개별</text>
+  <rect x="914" y="44" width="14" height="14" rx="4" fill="#F3EEFB" stroke="#CDBCE8"/>
+  <text x="936" y="56" font-size="12" fill="#6B7280">변수</text>
+  <rect x="984" y="44" width="14" height="14" rx="4" fill="#FDF1E3" stroke="#F0C79A"/>
+  <text x="1006" y="56" font-size="12" fill="#6B7280">선택 사항</text>
+</svg>
