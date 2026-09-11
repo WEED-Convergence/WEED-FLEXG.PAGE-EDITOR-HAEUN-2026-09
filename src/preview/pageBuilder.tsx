@@ -20,13 +20,16 @@ import { useEffect, useRef, useState } from 'react';
 import { Box, Flex, Text } from '@chakra-ui/react';
 import {
   DOC_NAME, SHOP_URL, PUBLISH_STATES, SAVE_STATE,
-  RAIL_TOP, RAIL_BOTTOM, PANEL_TOGGLES, CUSTOM_PAGES, COLLAPSED_GROUPS, LAYER_TREE,
+  RAIL_TOP, RAIL_BOTTOM, PANEL_TOGGLES, CUSTOM_PAGES, COLLAPSED_GROUPS,
+  ELEMENTS, elementById, groupOf,
   ARTBOARDS, ARTBOARD_GAP, SECTION_TITLE, SAMPLE_PRODUCTS, CATEGORY_GROUP, SINGLE_AREA,
   TOOLS, RIGHT_TABS, EMPTY_HINT,
-  ELEMENT_KINDS, DATA_PANEL, REPEAT_NONE, REPEAT_SOURCES, REPEAT_PREVIEW_COUNT,
-  INDIVIDUAL_FIELDS, RETURN_PREVIEW, APPLY_REPEAT, APPLY_SINGLE, DISPLAY_CONDITION, LOCK_NOTE,
+  DATA_PANEL, REPEAT_NONE, REPEAT_SOURCES, REPEAT_COUNT, REPEAT_PREVIEW,
+  fieldsFor, FIELD_LABEL, FIELD_PLACEHOLDER, sourceSectionLabel, VAR_SECTION_LABEL,
+  FIELD_SAMPLE, PREVIEW_LABEL, RESULT_NOTE, PATH_NOTE, GUIDE, PATH_HELP,
+  APPLY_REPEAT, APPLY_BIND, APPLIED_MARK, DISPLAY_CONDITION,
   CONDITION_MODAL, COND_CATEGORIES, COND_VARIABLES, COND_COMPARES, COND_VALUES, COND_DEFAULT,
-  type RailIcon, type LayerKind, type ToolKind, type ElementKind, type CondRow,
+  type RailIcon, type ToolKind, type ElementKind, type ElementNode, type CondRow,
 } from './pageBuilderData';
 
 /* ────────────────────────────────────────────────────────────
@@ -85,7 +88,7 @@ function RailGlyph({ icon, c }: { icon: RailIcon; c: string }) {
 }
 
 /** 요소 성격 아이콘 — 레이어 트리와 데이터 탭이 같이 쓴다 */
-function KindGlyph({ kind, c, s = 14 }: { kind: LayerKind | ElementKind; c: string; s?: number }) {
+function KindGlyph({ kind, c, s = 14 }: { kind: ElementKind; c: string; s?: number }) {
   const p = { fill: 'none', stroke: c, strokeWidth: 1.3, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
   const box = { width: s, height: s, viewBox: '0 0 14 14' };
   switch (kind) {
@@ -95,7 +98,6 @@ function KindGlyph({ kind, c, s = 14 }: { kind: LayerKind | ElementKind; c: stri
       return <svg {...box}><rect x="2.5" y="3" width="9" height="8" rx="1" {...p} /><path d="M3 9.5 5.6 7 8 9.4" {...p} /><circle cx="9.2" cy="5.6" r="0.9" fill={c} stroke="none" /></svg>;
     case 'link':
       return <svg {...box}><path d="M6 8a2.2 2.2 0 0 1 0-3.1l1.4-1.4a2.2 2.2 0 1 1 3.1 3.1l-.7.7" {...p} /><path d="M8 6a2.2 2.2 0 0 1 0 3.1l-1.4 1.4a2.2 2.2 0 1 1-3.1-3.1l.7-.7" {...p} /></svg>;
-    case 'grid':
     case 'product':
       return <svg {...box}><rect x="2.5" y="2.5" width="9" height="9" rx="1" {...p} /><path d="M7 2.5v9M2.5 7h9" {...p} /></svg>;
     case 'category':
@@ -278,6 +280,18 @@ function IconChat({ c = PAGE.sub }: { c?: string }) {
   );
 }
 
+/** 작은 물음표 — 경로 옆과 패널 머리에서 쓴다 */
+function IconQuestion({ c = PAGE.faint, s = 14 }: { c?: string; s?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 16 16" aria-hidden>
+      <circle cx="8" cy="8" r="6.2" fill="none" stroke={c} strokeWidth="1.3" />
+      <path d="M6.4 6.3a1.6 1.6 0 1 1 2 1.6c-.3.1-.5.4-.5.8v.2" fill="none" stroke={c}
+        strokeWidth="1.3" strokeLinecap="round" />
+      <circle cx="7.9" cy="11.3" r="0.75" fill={c} />
+    </svg>
+  );
+}
+
 function IconHelp({ c = PAGE.sub }: { c?: string }) {
   return (
     <svg width="19" height="19" viewBox="0 0 20 20" aria-hidden>
@@ -325,52 +339,68 @@ function PanelTitle({ title, right }: { title: string; right?: React.ReactNode }
   );
 }
 
-/** 고르는 칸 — 데이터 탭이 값을 고를 때 쓴다. disabled 면 눌리지 않고 옅게 보인다 */
+/**
+ *  고르는 칸 — 데이터 탭이 값을 고를 때 쓴다.
+ *  잠긴 상태(회색 비활성)는 두지 않는다 — 해당 없는 칸은 아예 그리지 않는다.
+ */
 function Picker({
-  value, onClick, muted = false, disabled = false,
+  value, onClick, muted = false,
 }: {
-  value: string; onClick?: () => void; muted?: boolean; disabled?: boolean;
+  value: string; onClick?: () => void; muted?: boolean;
 }) {
   return (
-    <Flex as="button" onClick={disabled ? undefined : onClick} align="center" justify="space-between" gap="6px"
+    <Flex as="button" onClick={onClick} align="center" justify="space-between" gap="6px"
       w="100%" h="34px" px="9px" borderRadius="7px" minW="0"
-      border={'1px solid ' + (disabled ? PAGE.line : PAGE.line)}
-      bg={disabled ? PAGE.lineSoft : 'white'}
-      cursor={disabled ? 'not-allowed' : 'pointer'}
-      _hover={disabled ? undefined : { borderColor: PAGE.accent }}>
-      <Text fontFamily={F} fontSize="12px" color={disabled || muted ? PAGE.faint : PAGE.ink}
+      border={'1px solid ' + PAGE.line} bg="white" cursor="pointer"
+      _hover={{ borderColor: PAGE.accent }}>
+      <Text fontFamily={F} fontSize="12px" color={muted ? PAGE.faint : PAGE.ink}
         whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">{value}</Text>
-      <Box flexShrink={0} transform="rotate(90deg)" opacity={disabled ? 0.4 : 1}>
+      <Box flexShrink={0} transform="rotate(90deg)">
         <Chevron open={false} c={PAGE.faint} />
       </Box>
     </Flex>
   );
 }
 
-/** 왜 지금 고를 수 없는지 — 비활성 칸 아래 한 줄 */
-function LockNote({ text }: { text: string }) {
-  return (
-    <Text fontFamily={F} fontSize="11px" color={PAGE.faint} pt="6px" lineHeight="1.4">{text}</Text>
-  );
-}
+/** 목록 한 묶음 — 갈래가 둘 이상이면 머리글을 붙여 나눈다 */
+interface OptionSection { label?: string; items: readonly string[]; variable?: boolean }
 
 /** 고를 값 목록 — Picker 를 누르면 아래에 펼쳐진다 */
-function Options({ items, value, onPick }: { items: readonly string[]; value: string; onPick: (v: string) => void }) {
+function Options({
+  items, sections, value, onPick,
+}: {
+  items?: readonly string[];
+  sections?: OptionSection[];
+  value: string;
+  onPick: (v: string, sec?: OptionSection) => void;
+}) {
+  const secs: OptionSection[] = sections ?? [{ items: items ?? [] }];
   return (
     <Box border={'1px solid ' + PAGE.line} borderRadius="7px" mt="4px" py="3px" bg="white">
-      {items.map((it) => {
-        const on = it === value;
-        return (
-          <Flex as="button" key={it} onClick={() => onPick(it)} w="100%" align="center" gap="6px"
-            px="9px" py="7px" cursor="pointer" bg={on ? PAGE.accentSoft : 'transparent'}
-            _hover={{ bg: PAGE.accentSoft }}>
-            <Box w="13px" flexShrink={0}>{on && <IconCheck />}</Box>
-            <Text fontFamily={F} fontWeight={on ? '700' : '400'} fontSize="12px"
-              color={on ? PAGE.accentDeep : PAGE.body} textAlign="left"
-              whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">{it}</Text>
-          </Flex>
-        );
-      })}
+      {secs.map((s, si) => (
+        <Box key={si}>
+          {s.label && (
+            <Text fontFamily={F} fontWeight="700" fontSize="10px" color={PAGE.faint}
+              px="9px" pt={si > 0 ? '8px' : '4px'} pb="4px" mt={si > 0 ? '3px' : undefined}
+              borderTop={si > 0 ? '1px solid ' + PAGE.lineSoft : undefined}>
+              {s.label}
+            </Text>
+          )}
+          {s.items.map((it) => {
+            const on = it === value;
+            return (
+              <Flex as="button" key={it} onClick={() => onPick(it, s)} w="100%" align="center" gap="6px"
+                px="9px" py="7px" cursor="pointer" bg={on ? PAGE.accentSoft : 'transparent'}
+                _hover={{ bg: PAGE.accentSoft }}>
+                <Box w="13px" flexShrink={0}>{on && <IconCheck />}</Box>
+                <Text fontFamily={F} fontWeight={on ? '700' : '400'} fontSize="12px"
+                  color={on ? PAGE.accentDeep : PAGE.body} textAlign="left"
+                  whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">{it}</Text>
+              </Flex>
+            );
+          })}
+        </Box>
+      ))}
     </Box>
   );
 }
@@ -511,7 +541,7 @@ function ConditionModal({
   );
 }
 
-/** 표시 조건 — 반복·개별 데이터 각각의 하위 영역.
+/** 표시 조건 — 지금 고른 요소 하나에 건다. 선택 사항이라 기본은 걸리지 않은 상태.
  *  조건이 없으면 더하기 링크만, 걸려 있으면 조건 줄과 몇 개에서 보이는지를 보인다. */
 function ConditionArea({
   rule, count, onOpen, onRemove, mark,
@@ -546,12 +576,82 @@ function ConditionArea({
   );
 }
 
-/** 적용 버튼 — 검은 바 */
-function ApplyBtn({ label }: { label: string }) {
+/** 적용 버튼 — 검은 바. 눌러야 반영되고, 반영된 뒤에는 적용됨으로 바뀐다 */
+function ApplyBtn({ label, onClick, applied = false }: { label: string; onClick?: () => void; applied?: boolean }) {
   return (
-    <Flex as="button" w="100%" mt="10px" py="10px" borderRadius="7px" bg="#27272A" align="center" justify="center"
-      cursor="pointer" _hover={{ bg: '#3A3A3E' }}>
-      <Text fontFamily={F} fontWeight="700" fontSize="12px" color="white">{label}</Text>
+    <Flex as="button" onClick={applied ? undefined : onClick} w="100%" mt="10px" py="10px" borderRadius="7px"
+      align="center" justify="center" gap="5px"
+      bg={applied ? PAGE.accentSoft : '#27272A'} cursor={applied ? 'default' : 'pointer'}
+      _hover={applied ? undefined : { bg: '#3A3A3E' }}>
+      {applied && <IconCheck c={PAGE.accentDeep} s={12} />}
+      <Text fontFamily={F} fontWeight="700" fontSize="12px" color={applied ? PAGE.accentDeep : 'white'}>
+        {applied ? APPLIED_MARK : label}
+      </Text>
+    </Flex>
+  );
+}
+
+/** 종속을 보여 주는 한 줄 — 상위가 있으면 먼저 적고, 눌러 그리로 갈 수 있다.
+ *  끝의 물음표는 「지금 이 자리가 왜 이런지」를 그 자리에서 답한다. */
+function PathLine({ up, name, onUp, help }: { up?: string; name: string; onUp?: () => void; help?: string }) {
+  const [openHelp, setOpenHelp] = useState(false);
+  return (
+    <Box position="relative" pb="10px">
+      <Flex data-doc-mark="data-path" align="center" gap="5px" minW="0">
+        {up && (
+          <>
+            <Flex as="button" onClick={onUp} align="center" px="7px" py="4px" borderRadius="5px" minW="0"
+              bg={PAGE.accentSoft} cursor="pointer" title={PATH_NOTE.upHint} _hover={{ bg: '#E4E0FF' }}>
+              <Text fontFamily={F} fontWeight="700" fontSize="11px" color={PAGE.accentDeep}
+                whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">{up}</Text>
+            </Flex>
+            <Text fontFamily={F} fontSize="11px" color={PAGE.faint} flexShrink={0}>›</Text>
+          </>
+        )}
+        <Text fontFamily={F} fontWeight="700" fontSize="11px" color={PAGE.ink} minW="0"
+          whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">{name}</Text>
+        {help && (
+          <Flex as="button" data-doc-mark="data-path-help" onClick={() => setOpenHelp((v) => !v)}
+            w="18px" h="18px" ml="1px" align="center" justify="center" borderRadius="4px" flexShrink={0}
+            cursor="pointer" bg={openHelp ? PAGE.accentSoft : 'transparent'}
+            title="이 자리가 왜 이런지 보기" _hover={{ bg: PAGE.lineSoft }}>
+            <IconQuestion c={openHelp ? PAGE.accentDeep : PAGE.faint} s={13} />
+          </Flex>
+        )}
+      </Flex>
+
+      {/* 설명은 아래를 밀어내지 않고 위에 떠서 덮는다 */}
+      {openHelp && help && (
+        <Box position="absolute" zIndex={25} top="100%" left="0" right="0" mt="5px"
+          bg="white" border={'1px solid ' + PAGE.accentLine} borderRadius="8px" p="11px"
+          boxShadow="0 10px 24px rgba(40,32,90,0.18)">
+          <Flex align="flex-start" justify="space-between" gap="8px">
+            <Box minW="0">
+              {help.split('\n').map((l, i) => (
+                <Text key={i} fontFamily={F} fontSize="11px" color="#5F5A80" lineHeight="1.65">{l}</Text>
+              ))}
+            </Box>
+            <Flex as="button" onClick={() => setOpenHelp(false)} w="18px" h="18px" align="center"
+              justify="center" borderRadius="4px" cursor="pointer" flexShrink={0} title="닫기"
+              _hover={{ bg: PAGE.lineSoft }}><IconX c={PAGE.faint} /></Flex>
+          </Flex>
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+/** 결과 예고 — 이 자리에 값이 몇 번, 어떻게 들어가는지.
+ *  예상과 어긋나기 쉬운 경우(반복인데 값이 안 바뀜)는 눈에 띄게 둔다. */
+function ResultNote({ text, warn = false }: { text: string; warn?: boolean }) {
+  return (
+    <Flex data-doc-mark="data-result" align="center" gap="5px" pt="8px"
+      bg={warn ? '#FDF3E6' : undefined} borderRadius={warn ? '6px' : undefined}
+      px={warn ? '8px' : undefined} py={warn ? '7px' : undefined} mt={warn ? '2px' : undefined}>
+      <Box flexShrink={0}><IconInfo c={warn ? '#C07A1E' : '#8B86AE'} /></Box>
+      <Text fontFamily={F} fontWeight={warn ? '700' : '400'} fontSize="11px" color={warn ? '#9A5E1C' : '#77719A'}>
+        {text}
+      </Text>
     </Flex>
   );
 }
@@ -583,26 +683,29 @@ function Waiting({ text }: { text: string }) {
  *  캔버스 — 추천 상품 영역(자리표시)
  * ──────────────────────────────────────────────────────────── */
 
-/** 고를 수 있는 자리 — 누르면 우측 데이터 탭이 그 성격으로 바뀐다 */
+/**
+ *  고를 수 있는 자리 — 누르면 우측 데이터 탭이 그 요소로 바뀐다.
+ *  같은 id 가 여러 곳에 쓰이면(반복으로 찍힌 카드 3장) 함께 표시된다 — 요소 하나가 여러 번 찍힌 것이므로.
+ */
 function Pickable({
-  kind, picked, onPick, children, ...rest
+  id, picked, onPick, children, ...rest
 }: {
-  kind: ElementKind; picked: ElementKind | null; onPick: (k: ElementKind) => void;
+  id: string; picked: string | null; onPick: (id: string) => void;
   children: React.ReactNode; [k: string]: unknown;
 }) {
-  const on = picked === kind;
+  const on = picked === id;
   return (
     <Box {...rest} position="relative" cursor="pointer"
       outline={on ? '2px solid ' + PAGE.accent : '2px solid transparent'} outlineOffset="3px"
       bg={on ? '#F4F2FF' : undefined}
       _hover={{ outlineColor: on ? PAGE.accent : '#C9C4FF' }}
-      onMouseDown={(e: React.MouseEvent) => { e.stopPropagation(); onPick(kind); }}>
+      onMouseDown={(e: React.MouseEvent) => { e.stopPropagation(); onPick(id); }}>
       {children}
     </Box>
   );
 }
 
-function ArtboardBody({ w, picked, onPick, marked = false }: { w: number; picked: ElementKind | null; onPick: (k: ElementKind) => void; marked?: boolean }) {
+function ArtboardBody({ w, picked, onPick, marked = false }: { w: number; picked: string | null; onPick: (id: string) => void; marked?: boolean }) {
   const narrow = w < 500;
   const pad = narrow ? 16 : 28;
   const cols = narrow ? 1 : 3;
@@ -610,27 +713,27 @@ function ArtboardBody({ w, picked, onPick, marked = false }: { w: number; picked
   return (
     <Box w="100%" h="100%" bg="white" p={pad + 'px'} overflow="hidden">
       {/* 섹션 제목 */}
-      <Pickable kind="text" picked={picked} onPick={onPick} mb="14px" w="max-content">
+      <Pickable id="title" picked={picked} onPick={onPick} mb="14px" w="max-content">
         <Text fontFamily={F} fontWeight="800" fontSize="17px" color={PAGE.ink}>{SECTION_TITLE}</Text>
       </Pickable>
 
-      {/* 상품 카드 그룹 — 반복 목록 */}
-      <Pickable kind="product" picked={picked} onPick={onPick} maxW={narrow ? '100%' : '600px'}>
+      {/* 상품 카드 그룹 — 반복 목록. 카드 3장은 같은 요소가 세 번 찍힌 것 */}
+      <Pickable id="gProd" picked={picked} onPick={onPick} maxW={narrow ? '100%' : '600px'}>
         <Box display="grid" gridTemplateColumns={'repeat(' + cols + ', 1fr)'} gap="10px">
           {SAMPLE_PRODUCTS.slice(0, narrow ? 2 : 3).map((p, i) => (
             <Box key={p.name} border={'1px solid ' + PAGE.line} borderRadius="9px" bg="white" overflow="hidden">
-              <Pickable kind="image" picked={picked} onPick={onPick}>
+              <Pickable id="pImg" picked={picked} onPick={onPick}>
                 <Flex h="128px" align="center" justify="center"
                   bg={['#E5E0D5', '#D5D0C8', '#E3E7E2'][i % 3]}>
                   <Text fontFamily={F} fontSize="11px" color={PAGE.sub}>상품 이미지</Text>
                 </Flex>
               </Pickable>
               <Box p="10px">
-                <Pickable kind="text" picked={picked} onPick={onPick}>
+                <Pickable id="pName" picked={picked} onPick={onPick}>
                   <Text fontFamily={F} fontWeight="700" fontSize="12px" color={PAGE.ink}
                     whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">{p.name}</Text>
                 </Pickable>
-                <Pickable kind="text" picked={picked} onPick={onPick} mt="5px">
+                <Pickable id="pPrice" picked={picked} onPick={onPick} mt="5px">
                   <Text fontFamily={F} fontSize="12px" color={PAGE.sub}>{p.price}</Text>
                 </Pickable>
               </Box>
@@ -640,12 +743,12 @@ function ArtboardBody({ w, picked, onPick, marked = false }: { w: number; picked
       </Pickable>
 
       {/* 카테고리 그룹 */}
-      <Pickable kind="category" picked={picked} onPick={onPick} mt="30px" w="260px" maxW="100%">
+      <Pickable id="gCat" picked={picked} onPick={onPick} mt="30px" w="260px" maxW="100%">
         <Box border={'1px solid ' + PAGE.line} borderRadius="8px" p="14px">
           <Text fontFamily={F} fontSize="11px" color={PAGE.faint}>{CATEGORY_GROUP.caption}</Text>
           <Text fontFamily={F} fontWeight="700" fontSize="14px" color={PAGE.ink} py="7px">{CATEGORY_GROUP.title}</Text>
           {CATEGORY_GROUP.links.map((l) => (
-            <Pickable key={l} kind="link" picked={picked} onPick={onPick}>
+            <Pickable key={l} id="cLink" picked={picked} onPick={onPick}>
               <Text fontFamily={F} fontSize="12px" color={PAGE.body} py="5px">〉 {l}</Text>
             </Pickable>
           ))}
@@ -661,10 +764,10 @@ function ArtboardBody({ w, picked, onPick, marked = false }: { w: number; picked
         <Box display="grid" gridTemplateColumns={narrow ? '1fr' : 'repeat(3, 1fr)'} gap="10px"
           maxW={narrow ? '100%' : '600px'}>
           {SINGLE_AREA.items.map((it) => (
-            <Pickable key={it.kind + it.label} kind={it.kind} picked={picked} onPick={onPick}>
+            <Pickable key={it.id} id={it.id} picked={picked} onPick={onPick}>
               <Flex minH="90px" direction="column" justify="center" gap="8px" p="14px"
-                border={'1px dashed ' + (picked === it.kind ? '#9E96FF' : '#CFCFD5')} borderRadius="8px"
-                bg={picked === it.kind ? '#F5F2FF' : '#FAFAFA'}>
+                border={'1px dashed ' + (picked === it.id ? '#9E96FF' : '#CFCFD5')} borderRadius="8px"
+                bg={picked === it.id ? '#F5F2FF' : '#FAFAFA'}>
                 {it.shape === 'image' && (
                   <Flex h="32px" borderRadius="5px" bg="#DDD5C6" align="center" justify="center">
                     <Text fontFamily={F} fontSize="10px" color={PAGE.sub}>{it.label}</Text>
@@ -696,178 +799,258 @@ function ArtboardBody({ w, picked, onPick, marked = false }: { w: number; picked
  *  오른쪽 [데이터] 탭 — 이번에 설계한 영역
  * ──────────────────────────────────────────────────────────── */
 
-function DataTab({ picked, onPick }: { picked: ElementKind | null; onPick: (k: ElementKind | null) => void }) {
-  // 표시 조건 — 반복·개별 각각 따로 건다
-  const [repeatCond, setRepeatCond] = useState(false);
-  const [singleCond, setSingleCond] = useState(true); // 참고 이미지의 「조건 있음」 상태를 기본으로 보임
-  // 고치기(연필)로 연 조건 팝업 — 어느 쪽 조건을 고치는 중인지
-  const [editing, setEditing] = useState<'repeat' | 'single' | null>(null);
-  const [repeat, setRepeat] = useState<string>(REPEAT_NONE);
+/**
+ *  데이터 탭 — 축이 둘인 모델을 그대로 그린다.
+ *
+ *   축1 「몇 번 찍히나」 = 고른 요소가 반복 안이냐 밖이냐. 자동으로 정해짐 → 경로 한 줄로 보여 줌
+ *   축2 「값을 어디서 가져오나」 = 상위 소스의 항목이냐 변수냐 → 고를 수 있는 항목 목록으로 드러남
+ *
+ *  회색으로 잠근 영역은 두지 않는다 — 지금 해당 없는 것은 아예 그리지 않는다.
+ */
+function DataTab({ picked, onPick }: { picked: string | null; onPick: (id: string | null) => void }) {
+  /* 그룹에 적용된 반복 소스 — 적용을 눌러야 기록된다. 경로의 상위 이름이 여기서 나온다 */
+  const [appliedRepeat, setAppliedRepeat] = useState<Record<string, string>>({});
+  /* 고르기만 하고 아직 적용하지 않은 값 */
+  const [draftRepeat, setDraftRepeat] = useState<Record<string, string>>({});
   const [openRepeat, setOpenRepeat] = useState(false);
-  const [field, setField] = useState<string | null>(null);
+
+  /* 요소에 이은 항목 — 요소마다 따로 기억한다.
+     isVar = 상위 소스가 아니라 변수에서 가져온 값(반복은 그대로라 값만 안 바뀜) */
+  const [bound, setBound] = useState<Record<string, string>>({});
+  const [draftField, setDraftField] = useState<Record<string, { name: string; isVar: boolean }>>({});
   const [openField, setOpenField] = useState(false);
 
-  const meta = ELEMENT_KINDS.find((e) => e.kind === picked) ?? null;
-  const fields = picked ? INDIVIDUAL_FIELDS[picked] : [];
-  const preview = picked ? RETURN_PREVIEW[picked] : null;
-  // 그룹(반복 목록)이냐 낱개 요소냐에 따라 한쪽을 잠근다
-  const isGroup = meta?.repeat === true;
-  const usingRepeat = isGroup && repeat !== REPEAT_NONE;
+  /* 표시 조건 — 선택 사항이라 기본은 걸리지 않은 상태 */
+  const [cond, setCond] = useState<Record<string, boolean>>({});
+  const [editing, setEditing] = useState<string | null>(null);
 
-  // 요소를 바꾸면 고른 값은 초기화한다 — 성격마다 고를 수 있는 것이 달라서
-  useEffect(() => {
-    setField(null);
-    setOpenField(false);
-    setRepeat(REPEAT_NONE); // 낱개로 옮겨 가면 앞서 걸어 둔 반복이 남지 않게
-    setOpenRepeat(false);
-  }, [picked]);
+  /* 처음 쓰는 사람을 위한 안내 카드. 실제로는 처음 한 번만 펴 두고,
+     접고 나면 패널 머리의 물음표로 언제든 다시 편다 */
+  const [guideOpen, setGuideOpen] = useState(true);
+
+  const el = elementById(picked);
+  const group = groupOf(el);
+
+  /* 요소를 바꾸면 펼쳐 둔 목록만 접는다 — 고른 값은 요소마다 남는다 */
+  useEffect(() => { setOpenRepeat(false); setOpenField(false); }, [picked]);
+
+  /* ── 그룹을 골랐을 때 — 몇 번 찍을지 정하는 자리 ── */
+  const renderRepeat = (g: ElementNode) => {
+    const kind = g.group as 'product' | 'category';
+    const applied = appliedRepeat[g.id];
+    const draft = draftRepeat[g.id] ?? applied ?? REPEAT_NONE;
+    const chosen = draft !== REPEAT_NONE;
+    const preview = REPEAT_PREVIEW[kind];
+
+    return (
+      <>
+        {/* 그룹은 꼭대기라 경로에 상위가 없다 */}
+        <PathLine name={g.name} help={PATH_HELP.group} />
+
+        <Box data-doc-mark="data-repeat">
+          <Text fontFamily={F} fontSize="11px" color={PAGE.sub} pb="7px">반복 데이터</Text>
+          <Picker value={draft} muted={!chosen} onClick={() => setOpenRepeat((v) => !v)} />
+          {openRepeat && (
+            <Options items={REPEAT_SOURCES[kind]} value={draft}
+              onPick={(v) => { setDraftRepeat((r) => ({ ...r, [g.id]: v })); setOpenRepeat(false); }} />
+          )}
+        </Box>
+
+        {chosen && (
+          <Box data-doc-mark="data-repeat-preview" mt="8px" border={'1px solid ' + PAGE.accentLine}
+            bg="#FBFAFF" borderRadius="7px" p="9px">
+            <Text fontFamily={F} fontSize="10px" color="#77719A" pb="7px">반복 데이터 미리보기</Text>
+            <Box display="grid" gridTemplateColumns="repeat(3, 1fr)" gap="5px">
+              {preview.items.slice(0, REPEAT_COUNT).map((it, i) => (
+                <Box key={it} bg="white" border={'1px solid ' + PAGE.line} borderRadius="5px" overflow="hidden">
+                  {preview.withImage && (
+                    <Flex h="38px" align="center" justify="center" bg={['#E5DFD4', '#D5D0C8', '#E2E7E1'][i % 3]}>
+                      <Text fontFamily={F} fontSize="9px" color={PAGE.sub}>이미지</Text>
+                    </Flex>
+                  )}
+                  <Text fontFamily={F} fontSize="9px" color={PAGE.body} p="5px"
+                    whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">{it}</Text>
+                </Box>
+              ))}
+            </Box>
+            <ResultNote text={RESULT_NOTE.repeat} />
+          </Box>
+        )}
+
+        <ApplyBtn label={APPLY_REPEAT} applied={applied === draft}
+          onClick={() => setAppliedRepeat((r) => ({ ...r, [g.id]: draft }))} />
+
+        <ConditionArea mark="data-condition"
+          rule={cond[g.id] ? DISPLAY_CONDITION.rule : null}
+          count={DISPLAY_CONDITION.countRepeat}
+          onOpen={() => setEditing(g.id)}
+          onRemove={() => setCond((c) => ({ ...c, [g.id]: false }))} />
+      </>
+    );
+  };
+
+  /* ── 낱개 요소를 골랐을 때 — 무슨 값을 넣을지 정하는 자리 ── */
+  const renderField = (e: ElementNode) => {
+    const src = group ? appliedRepeat[group.id] : undefined;
+    const inRepeat = !!src && src !== REPEAT_NONE;
+
+    /* 반복 안이면 상위 소스의 항목과 변수를 한 목록에 두 묶음으로 나눠 보여 준다.
+       반복 밖이면 고를 수 있는 것이 변수뿐이라 묶음을 나누지 않는다. */
+    const sections: OptionSection[] = inRepeat
+      ? [
+          { label: sourceSectionLabel(src as string), items: fieldsFor(e.kind, src) },
+          { label: VAR_SECTION_LABEL, items: fieldsFor(e.kind), variable: true },
+        ]
+      : [{ items: fieldsFor(e.kind) }];
+
+    const pick = draftField[e.id];
+    const cur = pick?.name;
+    const isVar = !!pick?.isVar;
+    const applied = bound[e.id];
+    const sample = cur ? (FIELD_SAMPLE[cur] ?? cur) : '';
+    /* 반복인데 값이 안 바뀌는 경우는 예상과 어긋나기 쉬워 눈에 띄게 알린다 */
+    const warn = inRepeat && isVar;
+    const resultText = !inRepeat ? RESULT_NOTE.single : isVar ? RESULT_NOTE.sameAll : RESULT_NOTE.repeat;
+
+    return (
+      <>
+        {/* 경로 — 상위가 있으면 먼저 적는다. 이 한 줄이 종속이다 */}
+        <PathLine up={inRepeat ? src : group?.name} name={e.name}
+          onUp={group ? () => onPick(group.id) : undefined}
+          help={inRepeat ? PATH_HELP.inRepeat(src as string) : group ? PATH_HELP.noRepeat : PATH_HELP.free} />
+
+        <Box data-doc-mark="data-field">
+          <Text fontFamily={F} fontSize="11px" color={PAGE.sub} pb="7px">{FIELD_LABEL}</Text>
+          <Picker value={cur ?? FIELD_PLACEHOLDER} muted={!cur} onClick={() => setOpenField((v) => !v)} />
+          {openField && (
+            <Options sections={sections} value={cur ?? ''}
+              onPick={(v, sec) => {
+                setDraftField((f) => ({ ...f, [e.id]: { name: v, isVar: !!sec?.variable } }));
+                setOpenField(false);
+              }} />
+          )}
+        </Box>
+
+        {/* 고른 항목에 실제로 무엇이 들어가는지 */}
+        {cur && (
+          <Box data-doc-mark="data-field-preview" mt="8px" border={'1px solid ' + PAGE.accentLine}
+            bg="#FBFAFF" borderRadius="7px" p="9px">
+            <Text fontFamily={F} fontSize="10px" color="#77719A" pb="7px">{PREVIEW_LABEL}</Text>
+            {e.kind === 'image' ? (
+              <Flex h="72px" borderRadius="6px" bg="#DED5C6" align="center" justify="center">
+                <Text fontFamily={F} fontSize="10px" color={PAGE.sub}>{cur}</Text>
+              </Flex>
+            ) : (
+              <Box bg="white" border={'1px solid ' + PAGE.line} borderRadius="6px" p="9px">
+                <Text fontFamily={F} fontWeight="700" fontSize="12px" color={PAGE.ink}>{sample}</Text>
+                <Text fontFamily={F} fontSize="10px" color={PAGE.sub} pt="4px">{cur}</Text>
+              </Box>
+            )}
+            <ResultNote text={resultText} warn={warn} />
+          </Box>
+        )}
+
+        {cur && (
+          <ApplyBtn label={APPLY_BIND} applied={applied === cur}
+            onClick={() => setBound((b) => ({ ...b, [e.id]: cur }))} />
+        )}
+
+        <ConditionArea mark="data-condition"
+          rule={cond[e.id] ? DISPLAY_CONDITION.rule : null}
+          count={inRepeat ? DISPLAY_CONDITION.countRepeat : DISPLAY_CONDITION.countSingle}
+          onOpen={() => setEditing(e.id)}
+          onRemove={() => setCond((c) => ({ ...c, [e.id]: false }))} />
+      </>
+    );
+  };
 
   return (
     <>
-      {/* 패널 머리 */}
-      <Box data-doc-mark="data-head" px="16px" py="12px" borderBottom={'1px solid ' + PAGE.line}>
-        <Text fontFamily={F} fontWeight="700" fontSize="14px" color={PAGE.ink}>{DATA_PANEL.title}</Text>
-        <Text fontFamily={F} fontSize="11px" color={PAGE.faint} pt="3px">
-          {meta ? meta.name : DATA_PANEL.waitingHead}
-        </Text>
+      {/* 패널 머리 — 안내를 접어 두면 여기 물음표로 다시 편다 */}
+      <Flex data-doc-mark="data-head" align="flex-start" justify="space-between" gap="8px"
+        px="16px" py="12px" borderBottom={'1px solid ' + PAGE.line}>
+        <Box minW="0">
+          <Text fontFamily={F} fontWeight="700" fontSize="14px" color={PAGE.ink}>{DATA_PANEL.title}</Text>
+          <Text fontFamily={F} fontSize="11px" color={PAGE.faint} pt="3px">
+            {el ? el.name : DATA_PANEL.waitingHead}
+          </Text>
+        </Box>
+        {!guideOpen && (
+          <Flex as="button" onClick={() => setGuideOpen(true)} w="24px" h="24px" align="center" justify="center"
+            borderRadius="6px" cursor="pointer" flexShrink={0} title={GUIDE.reopen}
+            _hover={{ bg: PAGE.lineSoft }}>
+            <IconQuestion c={PAGE.faint} s={15} />
+          </Flex>
+        )}
+      </Flex>
+
+      {/* 처음 쓰는 사람을 위한 안내 — 패널 위에 떠서 덮는다(자리를 밀지 않음) */}
+      <Box position="relative">
+      {guideOpen && (
+        <Box data-doc-mark="data-guide" position="absolute" zIndex={30} top="10px" left="16px" right="16px"
+          p="13px" borderRadius="10px" bg="white" border={'1px solid ' + PAGE.accentLine}
+          boxShadow="0 12px 30px rgba(40,32,90,0.22)">
+          <Flex align="center" justify="space-between" gap="8px" pb="9px">
+            <Text fontFamily={F} fontWeight="700" fontSize="11.5px" color={PAGE.accentDeep}>
+              {GUIDE.title}
+            </Text>
+            <Flex as="button" onClick={() => setGuideOpen(false)} w="18px" h="18px" align="center"
+              justify="center" borderRadius="4px" cursor="pointer" flexShrink={0} title="접기"
+              _hover={{ bg: '#E4E0FF' }}><IconX c={PAGE.accentDeep} /></Flex>
+          </Flex>
+
+          {GUIDE.body.map((p) => (
+            <Text key={p} fontFamily={F} fontSize="11.5px" color="#5F5A80" lineHeight="1.7" pb="9px">
+              {p}
+            </Text>
+          ))}
+
+          <Flex as="button" onClick={() => setGuideOpen(false)} w="100%" mt="5px" py="7px"
+            align="center" justify="center" borderRadius="6px" bg="white"
+            border={'1px solid ' + PAGE.accentLine} cursor="pointer" _hover={{ bg: '#FBFAFF' }}>
+            <Text fontFamily={F} fontWeight="700" fontSize="11px" color={PAGE.accentDeep}>{GUIDE.close}</Text>
+          </Flex>
+        </Box>
+      )}
       </Box>
 
-      {/* ① 선택 요소 */}
+      {/* ① 선택 요소 — 고른 것 한 줄 */}
       <Box data-doc-mark="data-step1" px="16px" py="14px" borderBottom={'1px solid ' + PAGE.line}>
         <StepTitle n={1} label="선택 요소" />
-        {!meta && <Waiting text={DATA_PANEL.waitingElement} />}
-
-        {/* 요소 목록 — 고른 것 하나만 체크로 표시. 작업 창에서 고르든 여기서 고르든 같다 */}
-        <Box data-doc-mark="data-elements" pt={meta ? '0' : '9px'}>
-          {ELEMENT_KINDS.map((e) => {
-            const on = e.kind === picked;
-            return (
-              <Flex as="button" key={e.kind} onClick={() => onPick(on ? null : e.kind)}
-                w="100%" align="center" gap="9px" p="9px" borderRadius="7px" cursor="pointer"
-                bg={on ? PAGE.accentSoft : 'transparent'} _hover={{ bg: on ? PAGE.accentSoft : '#F7F7F8' }}>
-                <KindGlyph kind={e.kind} c={on ? PAGE.accentDeep : PAGE.faint} s={15} />
-                <Box flex="1" minW="0" textAlign="left">
-                  <Text fontFamily={F} fontWeight="700" fontSize="12px" color={on ? PAGE.accentDeep : PAGE.ink}>
-                    {e.name}
-                  </Text>
-                  <Text fontFamily={F} fontSize="10px" color={PAGE.faint}
-                    whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">{e.desc}</Text>
-                </Box>
-                {on && <IconCheck />}
-              </Flex>
-            );
-          })}
-        </Box>
-      </Box>
-
-      {/* ② 데이터 설정 */}
-      <Box data-doc-mark="data-step2" px="16px" py="14px">
-        <StepTitle n={2} label="데이터 설정" />
-
-        {!picked ? (
-          <Waiting text={DATA_PANEL.waitingData} />
+        {!el ? (
+          <Waiting text={DATA_PANEL.waitingElement} />
         ) : (
-          <>
-              {/* 반복 데이터 — 선택 사항 */}
-                <Box data-doc-mark="data-repeat">
-                  <Flex align="center" gap="4px" pb="7px">
-                    <Text fontFamily={F} fontSize="11px" color={PAGE.sub}>반복 데이터 선택</Text>
-                    <Text fontFamily={F} fontSize="11px" color={PAGE.faint}>(선택 사항)</Text>
-                  </Flex>
-                  <Picker value={repeat} muted={!usingRepeat} disabled={!isGroup}
-                    onClick={() => setOpenRepeat((v) => !v)} />
-                  {openRepeat && isGroup && (
-                    <Options items={REPEAT_SOURCES} value={repeat}
-                      onPick={(v) => { setRepeat(v); setOpenRepeat(false); }} />
-                  )}
-                  {!isGroup && <LockNote text={LOCK_NOTE.repeat} />}
-                </Box>
-
-                {/* 반복을 고르면 무엇이 몇 개 찍히는지 */}
-                {usingRepeat && (
-                  <Box data-doc-mark="data-repeat-preview" mt="8px" border={'1px solid ' + PAGE.accentLine}
-                    bg="#FBFAFF" borderRadius="7px" p="9px">
-                    <Text fontFamily={F} fontSize="10px" color="#77719A" pb="7px">반복 데이터 미리보기</Text>
-                    <Box display="grid" gridTemplateColumns="repeat(3, 1fr)" gap="5px">
-                      {Array.from({ length: REPEAT_PREVIEW_COUNT }, (_, i) => (
-                        <Box key={i} bg="white" border={'1px solid ' + PAGE.line} borderRadius="5px" overflow="hidden">
-                          <Flex h="38px" align="center" justify="center" bg={['#E5DFD4', '#D5D0C8', '#E2E7E1'][i]}>
-                            <Text fontFamily={F} fontSize="9px" color={PAGE.sub}>이미지</Text>
-                          </Flex>
-                          <Text fontFamily={F} fontSize="9px" color={PAGE.body} p="4px"
-                            whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">
-                            {SAMPLE_PRODUCTS[i]?.name}
-                          </Text>
-                        </Box>
-                      ))}
-                    </Box>
-                    <ApplyBtn label={APPLY_REPEAT} />
-                    <ConditionArea
-                      rule={repeatCond ? DISPLAY_CONDITION.repeat.rule : null}
-                      count={DISPLAY_CONDITION.repeat.count}
-                      onOpen={() => setEditing('repeat')}
-                      onRemove={() => setRepeatCond(false)}
-                    />
-                  </Box>
-                )}
-
-                {/* 개별 데이터 */}
-                <Box data-doc-mark="data-single" borderTop={'1px solid ' + PAGE.line} mt="14px" pt="13px">
-                  <Text fontFamily={F} fontWeight="700" fontSize="12px" color={PAGE.ink} pb="8px">개별 데이터 선택</Text>
-                  <Picker value={field ?? fields[0]} muted={!field} disabled={isGroup}
-                    onClick={() => setOpenField((v) => !v)} />
-                  {openField && !isGroup && (
-                    <Options items={fields} value={field ?? fields[0]}
-                      onPick={(v) => { setField(v); setOpenField(false); }} />
-                  )}
-                  {isGroup && <LockNote text={LOCK_NOTE.single} />}
-
-                  {/* 무슨 값이 들어가는지 */}
-                  {preview && (
-                    <Box data-doc-mark="data-single-preview" mt="8px" border={'1px solid ' + PAGE.accentLine}
-                      bg="#FBFAFF" borderRadius="7px" p="9px"
-                      opacity={isGroup ? 0.45 : 1} pointerEvents={isGroup ? 'none' : undefined}>
-                      <Text fontFamily={F} fontSize="10px" color="#77719A" pb="7px">개별 필드 반환값</Text>
-                      {preview.shape === 'image' ? (
-                        <Flex h="72px" borderRadius="6px" bg="#DED5C6" align="center" justify="center">
-                          <Text fontFamily={F} fontSize="10px" color={PAGE.sub}>{preview.main}</Text>
-                        </Flex>
-                      ) : (
-                        <Box bg="white" border={'1px solid ' + PAGE.line} borderRadius="6px" p="9px">
-                          <Text fontFamily={F} fontWeight="700" fontSize="12px" color={PAGE.ink}>{preview.main}</Text>
-                          <Text fontFamily={F} fontSize="10px" color={PAGE.sub} pt="4px">{preview.sub}</Text>
-                        </Box>
-                      )}
-                      <ApplyBtn label={APPLY_SINGLE} />
-                      <ConditionArea
-                        mark="data-condition"
-                        rule={singleCond ? DISPLAY_CONDITION.single.rule : null}
-                        count={DISPLAY_CONDITION.single.count}
-                        onOpen={() => setEditing('single')}
-                        onRemove={() => setSingleCond(false)}
-                      />
-                    </Box>
-                  )}
-                </Box>
-          </>
+          <Flex align="center" gap="9px" p="9px" borderRadius="7px" bg={PAGE.accentSoft}>
+            <KindGlyph kind={el.kind} c={PAGE.accentDeep} s={15} />
+            <Box flex="1" minW="0">
+              <Text fontFamily={F} fontWeight="700" fontSize="12px" color={PAGE.accentDeep}>{el.name}</Text>
+              {el.where && (
+                <Text fontFamily={F} fontSize="10px" color="#8B86AE"
+                  whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">{el.where}</Text>
+              )}
+            </Box>
+            <Flex as="button" onClick={() => onPick(null)} w="20px" h="20px" align="center" justify="center"
+              borderRadius="4px" cursor="pointer" flexShrink={0} title="선택 해제"
+              _hover={{ bg: '#E4E0FF' }}><IconX c={PAGE.accentDeep} /></Flex>
+          </Flex>
         )}
       </Box>
 
-      {/* 표시 조건 고치기 팝업 */}
+      {/* ② 데이터 연결 */}
+      <Box data-doc-mark="data-step2" px="16px" py="14px">
+        <StepTitle n={2} label="데이터 연결" />
+        {!el ? <Waiting text={DATA_PANEL.waitingData} />
+          : el.layerOnly ? <Waiting text={DATA_PANEL.notBindable} />
+          : el.group ? renderRepeat(el)
+          : renderField(el)}
+      </Box>
+
+      {/* 표시 조건 설정 팝업 — 새로 걸 때도 고칠 때도 같은 창 */}
       {editing && (
         <ConditionModal
           onClose={() => setEditing(null)}
-          onApply={() => {
-            // 새로 거는 경우든 고치는 경우든, 적용을 눌러야 조건이 반영된다
-            if (editing === 'repeat') setRepeatCond(true);
-            else setSingleCond(true);
-            setEditing(null);
-          }}
-          onRemove={() => {
-            if (editing === 'repeat') setRepeatCond(false);
-            else setSingleCond(false);
-            setEditing(null);
-          }}
+          onApply={() => { setCond((c) => ({ ...c, [editing]: true })); setEditing(null); }}
+          onRemove={() => { setCond((c) => ({ ...c, [editing]: false })); setEditing(null); }}
         />
       )}
     </>
@@ -889,10 +1072,11 @@ export function PageBuilder() {
   const [toggles, setToggles] = useState(PANEL_TOGGLES.map((t) => t.on));
   const [pageIdx, setPageIdx] = useState(CUSTOM_PAGES.findIndex((p) => p.active));
   const [tool, setTool] = useState<ToolKind>('select');
-  const [openLayers, setOpenLayers] = useState<string[]>(['l0', 'l3', 'l6']);
+  // 펼쳐 둔 레이어 — 접으면 그 아래가 감춰진다
+  const [openLayers, setOpenLayers] = useState<string[]>(['root', 'frame', 'gProd', 'gCat', 'sFrame']);
 
   // 작업 창에서 고른 요소 — 데이터 탭이 이 값에 따라 바뀐다
-  const [picked, setPicked] = useState<ElementKind | null>(null);
+  const [picked, setPicked] = useState<string | null>(null);
 
   const [zoom, setZoom] = useState(0.66);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -910,9 +1094,9 @@ export function PageBuilder() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 요소를 고르면 데이터 탭으로 넘어간다 — 고친 결과를 바로 보게
-  const pickElement = (k: ElementKind | null) => {
-    setPicked(k);
-    if (k) setTab('데이터');
+  const pickElement = (id: string | null) => {
+    setPicked(id);
+    if (id) setTab('데이터');
   };
 
   const zoomBy = (f: number) => {
@@ -938,6 +1122,16 @@ export function PageBuilder() {
 
   const toggleLayer = (id: string) =>
     setOpenLayers((o) => (o.includes(id) ? o.filter((v) => v !== id) : [...o, id]));
+
+  // 접은 줄의 아래는 감춘다 — 화살표가 실제로 접히게
+  const visibleLayers: ElementNode[] = [];
+  let hideUnder: number | null = null;
+  for (const e of ELEMENTS) {
+    if (hideUnder !== null && e.depth > hideUnder) continue;
+    hideUnder = null;
+    visibleLayers.push(e);
+    if (e.hasChild && !openLayers.includes(e.id)) hideUnder = e.depth;
+  }
 
   return (
     <Flex direction="column" h="100dvh" bg="white" overflow="hidden" userSelect="none" minW="1280px">
@@ -1105,21 +1299,21 @@ export function PageBuilder() {
             <Box data-doc-mark="layers" borderTop={'1px solid ' + PAGE.line}>
               <PanelTitle title="레이어" right={<Box as="button" cursor="pointer"><IconSort /></Box>} />
               <Box pb="10px">
-                {LAYER_TREE.map((l) => {
-                  const on = !!l.element && l.element === picked;
+                {visibleLayers.map((l) => {
+                  const on = l.id === picked;
                   return (
                     <Flex key={l.id} data-doc-mark={l.docMark}
                       align="center" gap="6px" pr="10px" py="5px" cursor="pointer"
                       pl={10 + l.depth * 16 + 'px'} bg={on ? PAGE.accentSoft : 'transparent'}
                       _hover={{ bg: on ? PAGE.accentSoft : PAGE.lineSoft }}
-                      onClick={() => l.element && pickElement(on ? null : l.element)}>
+                      onClick={() => pickElement(on ? null : l.id)}>
                       <Box w="10px" flexShrink={0}
                         onClick={(e: React.MouseEvent) => { e.stopPropagation(); toggleLayer(l.id); }}>
                         {l.hasChild && <Chevron open={openLayers.includes(l.id)} />}
                       </Box>
                       <KindGlyph kind={l.kind} c={on ? PAGE.accentDeep : PAGE.faint} s={13} />
                       <Text fontFamily={F} fontWeight={on ? '700' : '400'} fontSize="12px"
-                        color={on ? PAGE.accentDeep : PAGE.body} minW="0"
+                        color={on ? PAGE.accentDeep : l.layerOnly ? PAGE.faint : PAGE.body} minW="0"
                         whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">{l.name}</Text>
                     </Flex>
                   );

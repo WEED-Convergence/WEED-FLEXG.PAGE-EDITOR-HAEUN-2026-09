@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="880" viewBox="0 0 1160 880" font-family="Pretendard, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9AA0A6"/>
+    </marker>
+    <style>
+      .bx   { rx:10; ry:10; stroke-width:1.4; }
+      .t    { font-size:15px; font-weight:700; text-anchor:middle; }
+      .s    { font-size:11.5px; text-anchor:middle; }
+      .lane { font-size:12.5px; font-weight:700; text-anchor:middle; fill:#6B7280; }
+      .ln   { stroke:#9AA0A6; stroke-width:1.4; fill:none; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1160" height="880" rx="14" fill="#F7F7FA"/>
+
+  <text x="44" y="52" font-size="22" font-weight="800" fill="#1F2328">현재 구조 (AS-IS)</text>
+  <text x="44" y="76" font-size="13" fill="#6B7280">지금 동작하는 흐름</text>
+
+  <!-- 시작 -->
+  <rect class="bx" x="460" y="104" width="240" height="48" fill="#ECECEF" stroke="#C9C9CF"/>
+  <text class="t" x="580" y="134" fill="#3A3A40">캔버스에서 요소 선택</text>
+
+  <!-- 분기선 -->
+  <path class="ln" d="M580 152 L580 182 M190 182 L970 182 M330 182 L330 216" marker-end="url(#ah)"/>
+  <path class="ln" d="M830 182 L830 216" marker-end="url(#ah)"/>
+
+  <text class="lane" x="330" y="205">개별 요소 · 이미지 · 텍스트 · 링크</text>
+  <text class="lane" x="830" y="205">컨테이너 그룹</text>
+
+  <!-- 왼쪽: 개별 -->
+  <rect class="bx" x="190" y="220" width="280" height="52" fill="#EDEBFF" stroke="#B9B2F5"/>
+  <text class="t" x="330" y="252" fill="#4A42A8">변수 데이터 선택</text>
+
+  <path class="ln" d="M330 272 L330 316" marker-end="url(#ah)"/>
+
+  <rect class="bx" x="190" y="320" width="280" height="52" fill="#EDEBFF" stroke="#B9B2F5"/>
+  <text class="t" x="330" y="352" fill="#4A42A8">바인딩 적용</text>
+
+  <!-- 오른쪽: 반복 -->
+  <rect class="bx" x="690" y="220" width="280" height="64" fill="#E3F5F0" stroke="#9ED8C8"/>
+  <text class="t" x="830" y="246" fill="#23705F">데이터 소스 선택</text>
+  <text class="s" x="830" y="266" fill="#4E8B7C">패널 최하단에 위치</text>
+
+  <path class="ln" d="M830 284 L830 322" marker-end="url(#ah)"/>
+
+  <rect class="bx" x="690" y="326" width="280" height="52" fill="#E3F5F0" stroke="#9ED8C8"/>
+  <text class="t" x="830" y="358" fill="#23705F">반복 적용</text>
+
+  <path class="ln" d="M830 378 L830 416" marker-end="url(#ah)"/>
+
+  <rect class="bx" x="690" y="420" width="280" height="52" fill="#E3F5F0" stroke="#9ED8C8"/>
+  <text class="t" x="830" y="452" fill="#23705F">그룹 내 개별 요소 선택</text>
+
+  <path class="ln" d="M830 472 L830 510" marker-end="url(#ah)"/>
+
+  <rect class="bx" x="690" y="514" width="280" height="52" fill="#E3F5F0" stroke="#9ED8C8"/>
+  <text class="t" x="830" y="546" fill="#23705F">연결 가능한 데이터 선택</text>
+
+  <path class="ln" d="M830 566 L830 604" marker-end="url(#ah)"/>
+
+  <rect class="bx" x="690" y="608" width="280" height="52" fill="#E3F5F0" stroke="#9ED8C8"/>
+  <text class="t" x="830" y="640" fill="#23705F">바인딩 적용</text>
+
+  <!-- 문제 메모 -->
+  <rect x="44" y="700" width="1072" height="136" rx="12" fill="#FFF4F4" stroke="#F3C9C9" stroke-width="1.4"/>
+  <text x="72" y="730" font-size="13.5" font-weight="800" fill="#B4433F">현재의 문제</text>
+  <text x="72" y="756" font-size="13" fill="#8C4F4C">· 상위를 지정하는 데이터 소스가 패널 맨 아래에 있어 계층이 드러나지 않음</text>
+  <text x="72" y="780" font-size="13" fill="#8C4F4C">· 개별 바인딩 영역 안에 변수 / 반복 탭이 또 갈려 있어 역할 구분이 안 됨</text>
+  <text x="72" y="804" font-size="13" fill="#8C4F4C">· 조건부 설정이 넓은 고정 영역을 차지해 필수 기능으로 오해됨</text>
+  <text x="72" y="828" font-size="13" fill="#8C4F4C">· 미선택 상태에 「바인딩 가능한 속성이 없습니다」가 크게 노출됨</text>
+
+  <!-- 범례 -->
+  <rect x="884" y="44" width="14" height="14" rx="4" fill="#EDEBFF" stroke="#B9B2F5"/>
+  <text x="906" y="56" font-size="12" fill="#6B7280">개별 경로</text>
+  <rect x="984" y="44" width="14" height="14" rx="4" fill="#E3F5F0" stroke="#9ED8C8"/>
+  <text x="1006" y="56" font-size="12" fill="#6B7280">반복 경로</text>
+</svg>
